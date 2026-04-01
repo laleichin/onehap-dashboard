@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OneHap Claims Dashboard — Global Impact Partners</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── GIP BRAND TOKENS ──────────────────────────────── */
+:root {
+  --navy:       #1B365D;
+  --navy-dark:  #112040;
+  --teal:       #00897B;
+  --teal-light: #4DB6AC;
+  --blue:       #3C537C;
+  --blue-light: #5C7FAE;
+  --danger:     #C62828;
+  --danger-bg:  #FFEBEE;
+  --danger-border: #EF9A9A;
+  --warning:    #E65100;
+  --warning-bg: #FFF3E0;
+  --success:    #2E7D32;
+  --success-bg: #E8F5E9;
+  --neutral:    #455A64;
+  --neutral-bg: #ECEFF1;
+  --bg-page:    #F4F6F9;
+  --bg-card:    #FFFFFF;
+  --text-primary:   #1C2B39;
+  --text-secondary: #546478;
+  --text-muted:     #8A97A4;
+  --border:     #DDE3EA;
+  --border-light: #EEF1F5;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.10);
+  --radius:     8px;
+  --radius-sm:  4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ── RESET & BASE ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { background: var(--bg-page); color: var(--text-primary); min-height: 100vh; }
+a { color: var(--teal); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── HEADER ────────────────────────────────────────── */
+.app-header {
+  background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 60%, var(--blue) 100%);
+  color: #fff;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-logo {
+  width: 40px; height: 40px;
+  background: var(--teal);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; letter-spacing: .5px; color: #fff;
+  flex-shrink: 0;
+}
+.header-title { font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+.header-subtitle { font-size: 11px; opacity: .75; margin-top: 1px; }
+.header-right { display: flex; align-items: center; gap: 24px; }
+.header-meta { text-align: right; }
+.header-meta .date { font-size: 12px; font-weight: 600; opacity: .9; }
+.header-meta .time { font-size: 11px; opacity: .6; margin-top: 2px; }
+.refresh-btn {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background .2s;
+}
+.refresh-btn:hover { background: rgba(255,255,255,.25); }
+
+/* ── LAYOUT ────────────────────────────────────────── */
+.app-body { padding: 20px 28px 40px; max-width: 1440px; margin: 0 auto; }
+
+/* ── FILTER BAR ────────────────────────────────────── */
+.filter-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--text-secondary); }
+.filter-group select,
+.filter-group input[type="date"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: #fff;
+  outline: none;
+  transition: border .2s;
+  min-width: 150px;
+}
+.filter-group select:focus,
+.filter-group input[type="date"]:focus { border-color: var(--teal); }
+.filter-date-range { display: flex; align-items: center; gap: 8px; }
+.filter-date-range span { color: var(--text-muted); font-size: 12px; }
+.filter-actions { display: flex; gap: 8px; align-self: flex-end; }
+.btn-clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .2s;
+}
+.btn-clear:hover { border-color: var(--navy); color: var(--navy); }
+.filter-count {
+  background: var(--teal);
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
+/* ── SECTION HEADERS ───────────────────────────────── */
+.section { margin-bottom: 24px; }
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.section-header h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: .2px;
+}
+.section-header .section-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+.section-badge {
+  background: var(--navy);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 24px;
+  text-align: center;
+}
+.section-badge.danger { background: var(--danger); }
+.section-badge.success { background: var(--success); }
+.section-icon { font-size: 16px; }
+
+/* ── KPI CARDS ─────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow .2s, transform .2s;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.kpi-card.navy::before  { background: var(--navy); }
+.kpi-card.teal::before  { background: var(--teal); }
+.kpi-card.blue::before  { background: var(--blue); }
+.kpi-card.danger::before { background: var(--danger); }
+.kpi-card.warning::before { background: var(--warning); }
+.kpi-card.success::before { background: var(--success); }
+.kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -.5px;
+}
+.kpi-value.large { font-size: 22px; }
+.kpi-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.kpi-icon {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: 22px;
+  opacity: .12;
+}
+
+/* ── ATTENTION BANNER ──────────────────────────────── */
+.attention-banner {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--danger);
+  font-weight: 600;
+}
+.attention-banner .att-count {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  padding: 2px 10px;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+/* ── TABLES ────────────────────────────────────────── */
+.table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.table-toolbar {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.table-toolbar-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.table-search {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  width: 200px;
+  outline: none;
+}
+.table-search:focus { border-color: var(--teal); }
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+thead {
+  background: var(--navy);
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+thead th:hover { background: var(--blue); }
+thead th.sort-asc::after  { content: ' ▲'; font-size: 9px; opacity: .8; }
+thead th.sort-desc::after { content: ' ▼'; font-size: 9px; opacity: .8; }
+tbody tr { border-bottom: 1px solid var(--border-light); transition: background .15s; }
+tbody tr:hover { background: #F0F6FF; }
+tbody tr.row-denied { background: var(--danger-bg); }
+tbody tr.row-denied:hover { background: #FFCDD2; }
+tbody tr.row-paid { background: var(--success-bg); }
+tbody tr.row-paid:hover { background: #C8E6C9; }
+td { padding: 9px 12px; vertical-align: middle; }
+td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.table-footer {
+  padding: 10px 16px;
+  background: var(--bg-page);
+  border-top: 1px solid var(--border-light);
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pagination { display: flex; gap: 4px; }
+.page-btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.page-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.page-btn:hover:not(.active) { border-color: var(--teal); color: var(--teal); }
+
+/* ── STATUS PILLS ──────────────────────────────────── */
+.pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.pill-denied   { background: #FFEBEE; color: var(--danger);  border: 1px solid #EF9A9A; }
+.pill-paid     { background: #E8F5E9; color: var(--success); border: 1px solid #A5D6A7; }
+.pill-pending  { background: var(--warning-bg); color: var(--warning); border: 1px solid #FFCC80; }
+.pill-approved { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
+.pill-billed   { background: #EDE7F6; color: #4527A0; border: 1px solid #CE93D8; }
+.pill-none     { background: var(--neutral-bg); color: var(--neutral); border: 1px solid #CFD8DC; }
+
+/* ── CHARTS ────────────────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.chart-card h3 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 10px;
+}
+.chart-wrap { position: relative; height: 200px; }
+.chart-wrap.tall { height: 240px; }
+
+/* ── COLLAPSIBLE SECTIONS ──────────────────────────── */
+.section-toggle { cursor: pointer; }
+.section-toggle .toggle-icon { transition: transform .25s; display: inline-block; }
+.section-toggle.collapsed .toggle-icon { transform: rotate(-90deg); }
+.collapsible-body { overflow: hidden; transition: max-height .3s ease; }
+.collapsible-body.collapsed { max-height: 0 !important; }
+
+/* ── EMPTY STATE ───────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+/* ── RESPONSIVE ────────────────────────────────────── */
+@media (max-width: 900px) {
+  .charts-row { grid-template-columns: 1fr 1fr; }
+  .charts-row .chart-wide { grid-column: span 2; }
+  .app-body { padding: 14px 16px 40px; }
+}
+@media (max-width: 600px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .charts-row .chart-wide { grid-column: span 1; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .filter-bar { flex-direction: column; }
+  .app-header { height: auto; padding: 12px 16px; flex-direction: column; gap: 8px; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════ HEADER -->
+<header class="app-header">
+  <div class="header-left">
+    <div class="header-logo">GIP</div>
+    <div>
+      <div class="header-title">OneHap Claims Dashboard</div>
+      <div class="header-subtitle">Weekly Executive Report · Global Impact Partners</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-meta">
+      <div class="date" id="hdr-date">Loading...</div>
+      <div class="time" id="hdr-time">—</div>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+
+  <!-- ═══════════════════════════════════════════════ FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Date of Service</label>
+      <div class="filter-date-range">
+        <input type="date" id="filter-date-from" title="From date"/>
+        <span>to</span>
+        <input type="date" id="filter-date-to" title="To date"/>
+      </div>
+    </div>
+    <div class="filter-group">
+      <label>Coordinator</label>
+      <select id="filter-coordinator"><option value="">All Coordinators</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Billing Status</label>
+      <select id="filter-billing">
+        <option value="">All Statuses</option>
+        <option>Pending</option>
+        <option>Approved</option>
+        <option>Billed</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Availity Result</label>
+      <select id="filter-availity">
+        <option value="">All Results</option>
+        <option>PAID</option>
+        <option>DENIED</option>
+        <option value="null">No Response</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Plan Type</label>
+      <select id="filter-plan"><option value="">All Plans</option></select>
+    </div>
+    <div class="filter-actions">
+      <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
+      <div class="filter-count" id="filter-count">— claims</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ ⚠ NEEDS ATTENTION -->
+  <div class="section" id="section-attention">
+    <div class="section-header">
+      <span class="section-icon">⚠️</span>
+      <h2>Claims Requiring Attention</h2>
+      <span class="section-badge danger" id="badge-attention">0</span>
+      <div class="section-line"></div>
+      <small style="color:var(--text-muted);font-size:11px">DENIED claims + Pending &gt; 7 days</small>
+    </div>
+    <div id="attention-banner-wrap"></div>
+    <div class="table-card">
+      <div class="table-toolbar">
+        <span class="table-toolbar-title">Priority Action List</span>
+        <input class="table-search" type="text" id="search-attention" placeholder="Search patient, coordinator…" oninput="filterTableSearch('tbl-attention','search-attention')"/>
+      </div>
+      <div class="table-wrap">
+        <table id="tbl-attention">
+          <thead>
+            <tr>
+              <th onclick="sortTable('tbl-attention',0)">Claim ID</th>
+              <th onclick="sortTable('tbl-attention',1)">Patient</th>
+              <th onclick="sortTable('tbl-attention',2)">Coordinator</th>
+              <th onclick="sortTable('tbl-attention',3)">Plan</th>
+              <th onclick="sortTable('tbl-attention',4)">Tier</th>
+              <th onclick="sortTable('tbl-attention',5)" class="numeric">Amount ($)</th>
+              <th onclick="sortTable('tbl-attention',6)">Service Date</th>
+              <th onclick="sortTable('tbl-attention',7)">Billing Status</th>
+              <th onclick="sortTable('tbl-attention',8)">Availity Result</th>
+              <th onclick="sortTable('tbl-attention',9)" class="numeric">Collected ($)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-attention"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="attention-footer-count">Loading…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ KPI CARDS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📊</span>
+      <h2>Executive KPIs</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="kpi-grid" id="kpi-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ CHARTS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📈</span>
+      <h2>Performance Analytics</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Billing Status Distribution</h3>
+        <div class="chart-wrap"><canvas id="chartBilling"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Availity Response</h3>
+        <div class="chart-wrap"><canvas id="chartAvaility"></canvas></div>
+      </div>
+      <div class="chart-card chart-wide">
+        <h3>Billed vs. Collected by Coordinator</h3>
+        <div class="chart-wrap tall"><canvas id="chartCoordinator"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ ALL CLAIMS TABLE -->
+  <div class="section">
+    <div class="section-header section-toggle" onclick="toggleSection('all-claims')">
+      <span class="section-icon">📋</span>
+      <h2>All Claims Detail</h2>
+      <span class="section-badge" id="badge-all">0</span>
+      <div class="section-line"></div>
+      <span style="color:var(--text-muted);font-size:12px;cursor:pointer">
+        <span class="toggle-icon">▼</span> Show / Hide
+      </span>
+    </div>
+    <div class="collapsible-body" id="all-claims">
+      <div class="table-card">
+        <div class="table-toolbar">
+          <span class="table-toolbar-title">All Claims — Filtered View</span>
+          <input class="table-search" type="text" id="search-all" placeholder="Search any field…" oninput="filterTableSearch('tbl-all','search-all')"/>
+        </div>
+        <div class="table-wrap">
+          <table id="tbl-all">
+            <thead>
+              <tr>
+                <th onclick="sortTable('tbl-all',0)">Claim ID</th>
+                <th onclick="sortTable('tbl-all',1)">Patient</th>
+                <th onclick="sortTable('tbl-all',2)">DOB</th>
+                <th onclick="sortTable('tbl-all',3)">Coordinator</th>
+                <th onclick="sortTable('tbl-all',4)">Plan</th>
+                <th onclick="sortTable('tbl-all',5)">Tier</th>
+                <th onclick="sortTable('tbl-all',6)" class="numeric">Amount ($)</th>
+                <th onclick="sortTable('tbl-all',7)">Service Date</th>
+                <th onclick="sortTable('tbl-all',8)">Billing Status</th>
+                <th onclick="sortTable('tbl-all',9)">Availity</th>
+                <th onclick="sortTable('tbl-all',10)" class="numeric">Collected ($)</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-all"></tbody>
+          </table>
+        </div>
+        <div class="table-footer">
+          <span id="all-footer-count">Loading…</span>
+          <div class="pagination" id="pagination-all"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ BY COORDINATOR -->
+  <div class="section">
+    <div class="section-header section-toggle" onclick="toggleSection('coord-section')">
+      <span class="section-icon">👥</span>
+      <h2>Coordinator Performance</h2>
+      <div class="section-line"></div>
+      <span style="color:var(--text-muted);font-size:12px;cursor:pointer">
+        <span class="toggle-icon">▼</span> Show / Hide
+      </span>
+    </div>
+    <div class="collapsible-body" id="coord-section">
+      <div class="table-card">
+        <div class="table-wrap">
+          <table id="tbl-coord">
+            <thead>
+              <tr>
+                <th onclick="sortTable('tbl-coord',0)">Coordinator</th>
+                <th onclick="sortTable('tbl-coord',1)" class="numeric">Claims</th>
+                <th onclick="sortTable('tbl-coord',2)" class="numeric">Billed ($)</th>
+                <th onclick="sortTable('tbl-coord',3)" class="numeric">Collected ($)</th>
+                <th onclick="sortTable('tbl-coord',4)" class="numeric">Pending</th>
+                <th onclick="sortTable('tbl-coord',5)" class="numeric">Approved</th>
+                <th onclick="sortTable('tbl-coord',6)" class="numeric">Billed</th>
+                <th onclick="sortTable('tbl-coord',7)" class="numeric">PAID</th>
+                <th onclick="sortTable('tbl-coord',8)" class="numeric">DENIED</th>
+                <th onclick="sortTable('tbl-coord',9)" class="numeric">Approval %</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-coord"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-body -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// EMBEDDED DASHBOARD DATA
+// ═══════════════════════════════════════════════════════
+const DASHBOARD_DATA = {"meta": {"generated_at": "2026-04-01", "generated_at_full": "2026-04-01 16:27", "total_claims": 82, "matched_claims": 12}, "kpis": {"Total Claims Submitted": 82, "Total Amount Billed ($)": 23849.25, "Total Amount Collected ($)": 4363.54, "Amount Denied ($)": 0.0, "Availity Approval Rate (%)": 100.0, "Collection Rate (%)": 18.3, "Pending Claims": 54, "Approved Claims": 18, "Billed Claims": 10, "PAID by Availity": 12, "DENIED by Availity": 0, "No Availity Response Yet": 70, "Report Date": "2026-04-01"}, "needs_attention": [{"Claim ID": "-", "First name": "Christopher", "Last name": "Willis", "DOB": "1994-05-19T00:00:00", "Current Coordinator": "Linda Buchanan", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Joaquin", "Last name": "Pena", "DOB": "2008-01-09T00:00:00", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Lady Salamas", "Last name": "Patu", "DOB": "2004-05-13T00:00:00", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Annette", "Last name": "Boynton", "DOB": "1961-06-16T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Suhila", "Last name": "Aatif", "DOB": "1983-12-06T00:00:00", "Current Coordinator": "Annamarie Aberion", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Brandi", "Last name": "Soggs", "DOB": "1983-06-02T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Chris", "Last name": "Rogers", "DOB": "1961-09-03T00:00:00", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Jorge", "Last name": "Mendoza Garcia", "DOB": "1988-02-16T00:00:00", "Current Coordinator": "Jaed Rivera Diaz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID"}, {"Claim ID": "-", "First name": "Ceara A", "Last name": "Broaker", "DOB": "1979-08-10T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Annual HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Freda", "Last name": "Smith", "DOB": "1978-11-15T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Annual HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Qahir", "Last name": "Baker", "DOB": "1980-11-25T00:00:00", "Current Coordinator": "Rebecca Jacobson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Anton", "Last name": "Wilson", "DOB": "1977-12-07T00:00:00", "Current Coordinator": "Rebecca Jacobson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Betty", "Last name": "Mcgraw", "DOB": "1971-05-14T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Brittany", "Last name": "Hines", "DOB": "1990-02-27T00:00:00", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Sabella", "Last name": "Mellard", "DOB": "2001-11-08T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Joseph", "Last name": "Quintana", "DOB": "1973-10-11T00:00:00", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Lucias", "Last name": "Bouge", "DOB": "1992-03-16T00:00:00", "Current Coordinator": "Kaitlin Jackson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Jheri", "Last name": "Flood", "DOB": "1989-04-01T00:00:00", "Current Coordinator": "Shelly Myers", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Heidi", "Last name": "Coleman", "DOB": "2000-03-04T00:00:00", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Makeesha", "Last name": "Jones", "DOB": "1985-09-26T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Britani", "Last name": "Cayetano", "DOB": "2003-04-02T00:00:00", "Current Coordinator": "Saida Ddungu", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Lance", "Last name": "Knaevelsrud", "DOB": "1976-12-18T00:00:00", "Current Coordinator": "Katelynn Adamson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Cheena", "Last name": "Bennett", "DOB": "1988-01-30T00:00:00", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Gloria", "Last name": "Martinez Hernandez", "DOB": "1995-08-29T00:00:00", "Current Coordinator": "Kaitlin Jackson", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Nicole L", "Last name": "Terhune", "DOB": "1983-03-13T00:00:00", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Darlyn", "Last name": "Villa", "DOB": "1995-04-24T00:00:00", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Rima", "Last name": "Cutrer", "DOB": "1965-11-10T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Melvin", "Last name": "Feria Vasquez", "DOB": "2008-02-11T00:00:00", "Current Coordinator": "Jaed Rivera Diaz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Jose", "Last name": "Harris", "DOB": "2001-06-03T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Tamara", "Last name": "Smith", "DOB": "1979-07-23T00:00:00", "Current Coordinator": "Teal Bauz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Emerson", "Last name": "Vasquez Valdez", "DOB": "1981-08-20T00:00:00", "Current Coordinator": "Annamarie Aberion", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Ramona", "Last name": "Brown", "DOB": "1969-10-05T00:00:00", "Current Coordinator": "Ona Schulz", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Mursal", "Last name": "Sediqi", "DOB": "1987-02-10T00:00:00", "Current Coordinator": "Masar Hassoun", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Devyn E", "Last name": "Barnett", "DOB": "1996-02-20T00:00:00", "Current Coordinator": "Teal Bauz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Michelle", "Last name": "Connolly", "DOB": "1968-05-28T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Roscoe", "Last name": "Brown", "DOB": "1976-12-21T00:00:00", "Current Coordinator": "Jennifer Nguyen", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Joycen", "Last name": "Gonzalez", "DOB": "2005-05-06T00:00:00", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Marci L", "Last name": "Spellman", "DOB": "1967-02-13T00:00:00", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Jared", "Last name": "Julin", "DOB": "1971-10-09T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Debra", "Last name": "Novack", "DOB": "1959-05-18T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 274.17, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Kaleb", "Last name": "Elverston", "DOB": "2002-11-26T00:00:00", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Transition of care", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "David", "Last name": "Isaac", "DOB": "2021-09-01T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Kevin", "Last name": "Gathright", "DOB": "1973-08-25T00:00:00", "Current Coordinator": "Natalie Bodey", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Stephen", "Last name": "Aden", "DOB": "2009-08-04T00:00:00", "Current Coordinator": "Ona Schulz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Kaneesha", "Last name": "Hagins", "DOB": "1990-07-08T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Willie B", "Last name": "Phergson", "DOB": "1958-04-02T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 274.17, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Juan", "Last name": "Hernandez Villalvas", "DOB": "1960-03-14T00:00:00", "Current Coordinator": "Julissa Valdez", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 319.92, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "James", "Last name": "Meek", "DOB": "1970-11-30T00:00:00", "Current Coordinator": "Asha Way", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Huriyah", "Last name": "Mohammed Ali", "DOB": "1953-10-31T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Jennifer", "Last name": "Self", "DOB": "1984-07-18T00:00:00", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Austin A", "Last name": "Dirks", "DOB": "2007-07-18T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Lizbeth", "Last name": "Sanchez", "DOB": "2006-02-10T00:00:00", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Jade", "Last name": "Samples", "DOB": "2001-03-11T00:00:00", "Current Coordinator": "Sara Sorkin", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 287.93, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}, {"Claim ID": "-", "First name": "Michael", "Last name": "Mackey", "DOB": "1975-12-02T00:00:00", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31T00:00:00", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending"}], "claims_detail": [{"Claim ID": "38902", "First name": "Jairo", "Last name": "Sanchez Gutierrez", "DOB": "1944-05-15", "Current Coordinator": "Meghan Maher", "Plan type": "DSNP", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 796.4, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "38901", "First name": "David", "Last name": "Owens", "DOB": "1968-10-01", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 796.4, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "38900", "First name": "Razunda", "Last name": "Wilson", "DOB": "1976-02-09", "Current Coordinator": "Alayna Lindley", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 796.4, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "38898", "First name": "Glenn", "Last name": "Cummings", "DOB": "1961-07-07", "Current Coordinator": "Masar Hassoun", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "38897", "First name": "Rita", "Last name": "Gutierrez", "DOB": "1962-10-28", "Current Coordinator": "Asha Way", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 3 (Telephonic)", "Amount": 183.86, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": "PAID", "Availity_PaidAmount": 183.86, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "38893", "First name": "Charlene", "Last name": "Moreno", "DOB": "1976-07-28", "Current Coordinator": "Shelly Myers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "38889", "First name": "James", "Last name": "Schuh", "DOB": "1953-06-23", "Current Coordinator": "Masar Hassoun", "Plan type": "DSNP", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 287.93, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "38886", "First name": "Tatyanna", "Last name": "Wilson", "DOB": "1997-04-18", "Current Coordinator": "Masar Hassoun", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "38881", "First name": "Darla", "Last name": "Rasmussen", "DOB": "1969-11-06", "Current Coordinator": "Luna Rivera", "Plan type": "DSNP", "Tier type": "Initial HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 287.93, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "38880", "First name": "Razia", "Last name": "Ayoubi", "DOB": "1983-07-13", "Current Coordinator": "Luna Rivera", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 796.4, "Date of service": "2026-03-31", "Billing status": "Billed", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Billed", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Victor", "Last name": "Ochoa", "DOB": "1985-12-15", "Current Coordinator": "Shelly Myers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 3 (Telephonic)", "Amount": 200.94, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Berta", "Last name": "Coogan", "DOB": "1970-12-21", "Current Coordinator": "Ayantu Tolessa", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 870.38, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Lorraine", "Last name": "Purfeerst", "DOB": "1964-09-01", "Current Coordinator": "Kaitlin Jackson", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 3 (Telephonic)", "Amount": 200.94, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Gatdet", "Last name": "Tut", "DOB": "1973-02-10", "Current Coordinator": "Luna Rivera", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 877.64, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Fatima", "Last name": "Haider", "DOB": "2022-01-15", "Current Coordinator": "Teal Bauz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Video call)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Justin", "Last name": "Koeppe", "DOB": "1982-11-09", "Current Coordinator": "Alayna Lindley", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Santi", "Last name": "Cano Jimenez", "DOB": "2015-09-28", "Current Coordinator": "Jean-marie Nsengiyumva", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Tefonie ", "Last name": "Wood", "DOB": "1980-07-25", "Current Coordinator": "Brittney Sharp", "Plan type": "IMC", "Tier type": "Initial HAP", "Tier level": "Tier 1", "Amount": 870.38, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jeremiah J", "Last name": "Stone", "DOB": "2019-07-17", "Current Coordinator": "Asha Way", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 3 (Telephonic)", "Amount": 200.94, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Kathleen", "Last name": "Rehak", "DOB": "1969-11-02", "Current Coordinator": "Jean-marie Nsengiyumva", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Thaydra", "Last name": "Ackley", "DOB": "1986-08-12", "Current Coordinator": "Shelly Myers", "Plan type": "IMC", "Tier type": "Annual HAP", "Tier level": "Tier 3 (Telephonic)", "Amount": 202.62, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Hamoun", "Last name": "Soltaniani", "DOB": "2007-12-02", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 3 (Telephonic)", "Amount": 200.94, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jailisa", "Last name": "Martinez Vargas", "DOB": "2001-08-23", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Video call)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Ciria", "Last name": "Garcia", "DOB": "1962-09-24", "Current Coordinator": "Jaed Rivera Diaz", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Pavlo", "Last name": "Martynishyn", "DOB": "2010-08-11", "Current Coordinator": "Natalie Bodey", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Natasha", "Last name": "Martin", "DOB": "1990-05-25", "Current Coordinator": "Meghan Maher", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Kian", "Last name": "Grant", "DOB": "1979-07-19", "Current Coordinator": "Alayna Lindley", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Ubah", "Last name": "Ali", "DOB": "1984-05-10", "Current Coordinator": "Eva Vega", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 3 (Telephonic)", "Amount": 200.94, "Date of service": "2026-03-31", "Billing status": "Approved", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Approved", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Ceara A", "Last name": "Broaker", "DOB": "1979-08-10", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Annual HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Freda", "Last name": "Smith", "DOB": "1978-11-15", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Annual HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Qahir", "Last name": "Baker", "DOB": "1980-11-25", "Current Coordinator": "Rebecca Jacobson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Anton", "Last name": "Wilson", "DOB": "1977-12-07", "Current Coordinator": "Rebecca Jacobson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Betty", "Last name": "Mcgraw", "DOB": "1971-05-14", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Brittany", "Last name": "Hines", "DOB": "1990-02-27", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Sabella", "Last name": "Mellard", "DOB": "2001-11-08", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Joseph", "Last name": "Quintana", "DOB": "1973-10-11", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Lucias", "Last name": "Bouge", "DOB": "1992-03-16", "Current Coordinator": "Kaitlin Jackson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jheri", "Last name": "Flood", "DOB": "1989-04-01", "Current Coordinator": "Shelly Myers", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Heidi", "Last name": "Coleman", "DOB": "2000-03-04", "Current Coordinator": "Lyosha Bowers", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Christopher", "Last name": "Willis", "DOB": "1994-05-19", "Current Coordinator": "Linda Buchanan", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Joaquin", "Last name": "Pena", "DOB": "2008-01-09", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Makeesha", "Last name": "Jones", "DOB": "1985-09-26", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Britani", "Last name": "Cayetano", "DOB": "2003-04-02", "Current Coordinator": "Saida Ddungu", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Lance", "Last name": "Knaevelsrud", "DOB": "1976-12-18", "Current Coordinator": "Katelynn Adamson", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Cheena", "Last name": "Bennett", "DOB": "1988-01-30", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Gloria", "Last name": "Martinez Hernandez", "DOB": "1995-08-29", "Current Coordinator": "Kaitlin Jackson", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Nicole L", "Last name": "Terhune", "DOB": "1983-03-13", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Darlyn", "Last name": "Villa", "DOB": "1995-04-24", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Lady Salamas", "Last name": "Patu", "DOB": "2004-05-13", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Rima", "Last name": "Cutrer", "DOB": "1965-11-10", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Melvin", "Last name": "Feria Vasquez", "DOB": "2008-02-11", "Current Coordinator": "Jaed Rivera Diaz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jose", "Last name": "Harris", "DOB": "2001-06-03", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Tamara", "Last name": "Smith", "DOB": "1979-07-23", "Current Coordinator": "Teal Bauz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Emerson", "Last name": "Vasquez Valdez", "DOB": "1981-08-20", "Current Coordinator": "Annamarie Aberion", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Ramona", "Last name": "Brown", "DOB": "1969-10-05", "Current Coordinator": "Ona Schulz", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Mursal", "Last name": "Sediqi", "DOB": "1987-02-10", "Current Coordinator": "Masar Hassoun", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Devyn E", "Last name": "Barnett", "DOB": "1996-02-20", "Current Coordinator": "Teal Bauz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Michelle", "Last name": "Connolly", "DOB": "1968-05-28", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Roscoe", "Last name": "Brown", "DOB": "1976-12-21", "Current Coordinator": "Jennifer Nguyen", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Joycen", "Last name": "Gonzalez", "DOB": "2005-05-06", "Current Coordinator": "Amber Helmer", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Marci L", "Last name": "Spellman", "DOB": "1967-02-13", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jared", "Last name": "Julin", "DOB": "1971-10-09", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Debra", "Last name": "Novack", "DOB": "1959-05-18", "Current Coordinator": "Aisjiana Domingo", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 274.17, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Annette", "Last name": "Boynton", "DOB": "1961-06-16", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Kaleb", "Last name": "Elverston", "DOB": "2002-11-26", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Transition of care", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "David", "Last name": "Isaac", "DOB": "2021-09-01", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Kevin", "Last name": "Gathright", "DOB": "1973-08-25", "Current Coordinator": "Natalie Bodey", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Stephen", "Last name": "Aden", "DOB": "2009-08-04", "Current Coordinator": "Ona Schulz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Kaneesha", "Last name": "Hagins", "DOB": "1990-07-08", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Willie B", "Last name": "Phergson", "DOB": "1958-04-02", "Current Coordinator": "Sara Sorkin", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 274.17, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Suhila", "Last name": "Aatif", "DOB": "1983-12-06", "Current Coordinator": "Annamarie Aberion", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Brandi", "Last name": "Soggs", "DOB": "1983-06-02", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Chris", "Last name": "Rogers", "DOB": "1961-09-03", "Current Coordinator": "Melayna Townsend-falck", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 223.81, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Juan", "Last name": "Hernandez Villalvas", "DOB": "1960-03-14", "Current Coordinator": "Julissa Valdez", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 319.92, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "James", "Last name": "Meek", "DOB": "1970-11-30", "Current Coordinator": "Asha Way", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Huriyah", "Last name": "Mohammed Ali", "DOB": "1953-10-31", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jennifer", "Last name": "Self", "DOB": "1984-07-18", "Current Coordinator": "Debbie Victor", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Austin A", "Last name": "Dirks", "DOB": "2007-07-18", "Current Coordinator": "Sara Sorkin", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Lizbeth", "Last name": "Sanchez", "DOB": "2006-02-10", "Current Coordinator": "Julissa Valdez", "Plan type": "IMC", "Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Amount": 244.6, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jade", "Last name": "Samples", "DOB": "2001-03-11", "Current Coordinator": "Sara Sorkin", "Plan type": "DSNP", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 287.93, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Jorge", "Last name": "Mendoza Garcia", "DOB": "1988-02-16", "Current Coordinator": "Jaed Rivera Diaz", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 223.81, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": "PAID", "Availity_PaidAmount": 796.4, "CFO_Status": "PAID", "Needs_Attention": false}, {"Claim ID": "-", "First name": "Michael", "Last name": "Mackey", "DOB": "1975-12-02", "Current Coordinator": "Aisjiana Domingo", "Plan type": "IMC", "Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Amount": 282.26, "Date of service": "2026-03-31", "Billing status": "Pending", "Availity_Status": null, "Availity_PaidAmount": null, "CFO_Status": "Pending", "Needs_Attention": false}], "by_coordinator": [{"Coordinator": "Luna Rivera", "Total_Claims": 3, "Amount_Billed": 1961.97, "Amount_Collected": 0.0, "Pending": 0, "Approved": 1, "Billed": 2, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Aisjiana Domingo", "Total_Claims": 7, "Amount_Billed": 1754.72, "Amount_Collected": 223.81, "Pending": 7, "Approved": 0, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Melayna Townsend-falck", "Total_Claims": 5, "Amount_Billed": 1712.43, "Amount_Collected": 1020.21, "Pending": 4, "Approved": 0, "Billed": 1, "Paid_Availity": 2, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Sara Sorkin", "Total_Claims": 7, "Amount_Billed": 1701.94, "Amount_Collected": 223.81, "Pending": 7, "Approved": 0, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Debbie Victor", "Total_Claims": 6, "Amount_Billed": 1363.65, "Amount_Collected": 0.0, "Pending": 6, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Alayna Lindley", "Total_Claims": 3, "Amount_Billed": 1360.92, "Amount_Collected": 0.0, "Pending": 0, "Approved": 2, "Billed": 1, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Julissa Valdez", "Total_Claims": 5, "Amount_Billed": 1256.74, "Amount_Collected": 223.81, "Pending": 5, "Approved": 0, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Meghan Maher", "Total_Claims": 2, "Amount_Billed": 1078.6599999999999, "Amount_Collected": 0.0, "Pending": 0, "Approved": 1, "Billed": 1, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Amber Helmer", "Total_Claims": 4, "Amount_Billed": 972.4, "Amount_Collected": 0.0, "Pending": 2, "Approved": 2, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Masar Hassoun", "Total_Claims": 4, "Amount_Billed": 959.36, "Amount_Collected": 447.62, "Pending": 1, "Approved": 0, "Billed": 3, "Paid_Availity": 2, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Shelly Myers", "Total_Claims": 4, "Amount_Billed": 871.97, "Amount_Collected": 223.81, "Pending": 1, "Approved": 2, "Billed": 1, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Ayantu Tolessa", "Total_Claims": 1, "Amount_Billed": 870.38, "Amount_Collected": 0.0, "Pending": 0, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Brittney Sharp", "Total_Claims": 1, "Amount_Billed": 870.38, "Amount_Collected": 0.0, "Pending": 0, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Lyosha Bowers", "Total_Claims": 3, "Amount_Billed": 733.8, "Amount_Collected": 0.0, "Pending": 3, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Teal Bauz", "Total_Claims": 3, "Amount_Billed": 713.01, "Amount_Collected": 0.0, "Pending": 2, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Jaed Rivera Diaz", "Total_Claims": 3, "Amount_Billed": 713.01, "Amount_Collected": 796.4, "Pending": 2, "Approved": 1, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Kaitlin Jackson", "Total_Claims": 3, "Amount_Billed": 690.14, "Amount_Collected": 0.0, "Pending": 2, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Asha Way", "Total_Claims": 3, "Amount_Billed": 667.06, "Amount_Collected": 183.86, "Pending": 1, "Approved": 1, "Billed": 1, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Rebecca Jacobson", "Total_Claims": 2, "Amount_Billed": 526.86, "Amount_Collected": 0.0, "Pending": 2, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Jean-marie Nsengiyumva", "Total_Claims": 2, "Amount_Billed": 489.2, "Amount_Collected": 0.0, "Pending": 0, "Approved": 2, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Natalie Bodey", "Total_Claims": 2, "Amount_Billed": 489.2, "Amount_Collected": 0.0, "Pending": 1, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Ona Schulz", "Total_Claims": 2, "Amount_Billed": 468.40999999999997, "Amount_Collected": 0.0, "Pending": 2, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Annamarie Aberion", "Total_Claims": 2, "Amount_Billed": 447.62, "Amount_Collected": 223.81, "Pending": 2, "Approved": 0, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Jennifer Nguyen", "Total_Claims": 1, "Amount_Billed": 282.26, "Amount_Collected": 0.0, "Pending": 1, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Saida Ddungu", "Total_Claims": 1, "Amount_Billed": 244.6, "Amount_Collected": 0.0, "Pending": 1, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Linda Buchanan", "Total_Claims": 1, "Amount_Billed": 223.81, "Amount_Collected": 796.4, "Pending": 1, "Approved": 0, "Billed": 0, "Paid_Availity": 1, "Denied_Availity": 0, "Approval_Rate": 1.0}, {"Coordinator": "Katelynn Adamson", "Total_Claims": 1, "Amount_Billed": 223.81, "Amount_Collected": 0.0, "Pending": 1, "Approved": 0, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}, {"Coordinator": "Eva Vega", "Total_Claims": 1, "Amount_Billed": 200.94, "Amount_Collected": 0.0, "Pending": 0, "Approved": 1, "Billed": 0, "Paid_Availity": 0, "Denied_Availity": 0, "Approval_Rate": null}], "by_status": [{"Billing status": "Approved", "Availity_Status": "No Response", "Num_Claims": 18, "Amount_Billed": 6177.76, "Amount_Collected": 0.0}, {"Billing status": "Billed", "Availity_Status": "No Response", "Num_Claims": 6, "Amount_Billed": 3761.46, "Amount_Collected": 0.0}, {"Billing status": "Billed", "Availity_Status": "PAID", "Num_Claims": 4, "Amount_Billed": 855.29, "Amount_Collected": 855.29}, {"Billing status": "Pending", "Availity_Status": "No Response", "Num_Claims": 46, "Amount_Billed": 11264.26, "Amount_Collected": 0.0}, {"Billing status": "Pending", "Availity_Status": "PAID", "Num_Claims": 8, "Amount_Billed": 1790.48, "Amount_Collected": 3508.25}], "by_tier": [{"Tier type": "Monthly follow up", "Tier level": "Tier 2 (Exception)", "Num_Claims": 41, "Amount_Billed": 9962.02, "Amount_Collected": 3284.4399999999996, "PAID": 7, "DENIED": 0}, {"Tier type": "Initial HAP", "Tier level": "Tier 1", "Num_Claims": 7, "Amount_Billed": 5804.0, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Monthly follow up", "Tier level": "Tier 2 (Face-to-face)", "Num_Claims": 5, "Amount_Billed": 1277.53, "Amount_Collected": 223.81, "PAID": 1, "DENIED": 0}, {"Tier type": "8 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Num_Claims": 5, "Amount_Billed": 1262.41, "Amount_Collected": 447.62, "PAID": 2, "DENIED": 0}, {"Tier type": "4 month HAP", "Tier level": "Tier 2 (Exception)", "Num_Claims": 5, "Amount_Billed": 1202.21, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "8 month HAP", "Tier level": "Tier 2 (Exception)", "Num_Claims": 5, "Amount_Billed": 1198.29, "Amount_Collected": 223.81, "PAID": 1, "DENIED": 0}, {"Tier type": "Monthly follow up", "Tier level": "Tier 3 (Telephonic)", "Num_Claims": 4, "Amount_Billed": 803.76, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Monthly follow up", "Tier level": "Tier 2 (Video call)", "Num_Claims": 2, "Amount_Billed": 526.86, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Annual HAP", "Tier level": "Tier 2 (Exception)", "Num_Claims": 2, "Amount_Billed": 468.40999999999997, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Initial HAP", "Tier level": "Tier 2 (Face-to-face)", "Num_Claims": 1, "Amount_Billed": 287.93, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "4 month HAP", "Tier level": "Tier 2 (Face-to-face)", "Num_Claims": 1, "Amount_Billed": 244.6, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Transition of care", "Tier level": "Tier 2 (Exception)", "Num_Claims": 1, "Amount_Billed": 223.81, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "Annual HAP", "Tier level": "Tier 3 (Telephonic)", "Num_Claims": 1, "Amount_Billed": 202.62, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "8 month HAP", "Tier level": "Tier 3 (Telephonic)", "Num_Claims": 1, "Amount_Billed": 200.94, "Amount_Collected": 0.0, "PAID": 0, "DENIED": 0}, {"Tier type": "4 month HAP", "Tier level": "Tier 3 (Telephonic)", "Num_Claims": 1, "Amount_Billed": 183.86, "Amount_Collected": 183.86, "PAID": 1, "DENIED": 0}]};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let filteredClaims = [];
+let allClaimsPage  = 1;
+const PAGE_SIZE    = 25;
+let charts = {};
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  initMeta();
+  initFilters();
+  applyFilters();
+  renderCoordTable();
+  renderCharts();
+});
+
+function initMeta() {
+  const m = DASHBOARD_DATA.meta;
+  document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
+  document.getElementById('hdr-time').textContent = 'Generated: ' + (m.generated_at_full || '—');
+}
+
+// ═══════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════
+function initFilters() {
+  // Populate coordinator dropdown
+  const coords = [...new Set(
+    DASHBOARD_DATA.claims_detail.map(r => r['Current Coordinator']).filter(Boolean)
+  )].sort();
+  const coordSel = document.getElementById('filter-coordinator');
+  coords.forEach(c => {
+    const o = document.createElement('option');
+    o.value = o.textContent = c;
+    coordSel.appendChild(o);
+  });
+
+  // Populate plan dropdown
+  const plans = [...new Set(
+    DASHBOARD_DATA.claims_detail.map(r => r['Plan type']).filter(Boolean)
+  )].sort();
+  const planSel = document.getElementById('filter-plan');
+  plans.forEach(p => {
+    const o = document.createElement('option');
+    o.value = o.textContent = p;
+    planSel.appendChild(o);
+  });
+
+  // Event listeners
+  ['filter-date-from','filter-date-to','filter-coordinator',
+   'filter-billing','filter-availity','filter-plan'].forEach(id => {
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+}
+
+function clearFilters() {
+  ['filter-date-from','filter-date-to'].forEach(id => document.getElementById(id).value = '');
+  ['filter-coordinator','filter-billing','filter-availity','filter-plan']
+    .forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+}
+
+function applyFilters() {
+  const dateFrom = document.getElementById('filter-date-from').value;
+  const dateTo   = document.getElementById('filter-date-to').value;
+  const coord    = document.getElementById('filter-coordinator').value;
+  const billing  = document.getElementById('filter-billing').value;
+  const availity = document.getElementById('filter-availity').value;
+  const plan     = document.getElementById('filter-plan').value;
+
+  filteredClaims = DASHBOARD_DATA.claims_detail.filter(r => {
+    const svc = r['Date of service'];
+    if (dateFrom && svc && svc < dateFrom) return false;
+    if (dateTo   && svc && svc > dateTo)   return false;
+    if (coord   && r['Current Coordinator'] !== coord)   return false;
+    if (billing && r['Billing status'] !== billing)       return false;
+    if (plan    && r['Plan type'] !== plan)               return false;
+    if (availity === 'null') { if (r['Availity_Status'] !== null) return false; }
+    else if (availity && r['Availity_Status'] !== availity) return false;
+    return true;
+  });
+
+  document.getElementById('filter-count').textContent =
+    filteredClaims.length + ' claim' + (filteredClaims.length !== 1 ? 's' : '');
+
+  allClaimsPage = 1;
+  renderKPIs();
+  renderAttentionTable();
+  renderAllClaimsTable();
+  updateCharts();
+}
+
+// ═══════════════════════════════════════════════════════
+// KPI CARDS
+// ═══════════════════════════════════════════════════════
+function renderKPIs() {
+  const d   = filteredClaims;
+  const tot = d.length;
+  const billed    = d.reduce((s, r) => s + (r.Amount || 0), 0);
+  const collected = d.reduce((s, r) => s + (r.Availity_PaidAmount || 0), 0);
+  const paid_n    = d.filter(r => r.Availity_Status === 'PAID').length;
+  const denied_n  = d.filter(r => r.Availity_Status === 'DENIED').length;
+  const pending_n = d.filter(r => r['Billing status'] === 'Pending').length;
+  const avail_tot = paid_n + denied_n;
+  const appr_rate = avail_tot > 0 ? (paid_n / avail_tot * 100).toFixed(1) : '—';
+  const coll_rate = billed > 0 ? (collected / billed * 100).toFixed(1) : '0.0';
+
+  const kpis = [
+    { label: 'Total Claims', value: tot, fmt: 'int', color: 'navy', icon: '📋', sub: 'submitted' },
+    { label: 'Amount Billed', value: billed, fmt: 'usd', color: 'blue', icon: '💰', sub: 'total billed' },
+    { label: 'Amount Collected', value: collected, fmt: 'usd', color: 'teal', icon: '✅', sub: 'confirmed by Availity' },
+    { label: 'Approval Rate', value: appr_rate, fmt: 'raw', color: avail_tot > 0 && appr_rate >= 80 ? 'success' : 'warning', icon: '📊', sub: paid_n + ' PAID / ' + denied_n + ' DENIED' },
+    { label: 'Pending Claims', value: pending_n, fmt: 'int', color: pending_n > 10 ? 'warning' : 'navy', icon: '⏳', sub: 'awaiting processing' },
+    { label: 'Collection Rate', value: coll_rate + '%', fmt: 'raw', color: 'teal', icon: '💹', sub: 'of billed amount' },
+  ];
+
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = kpis.map(k => `
+    <div class="kpi-card ${k.color}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.fmt === 'usd' && k.value > 99999 ? 'large' : ''}">${
+        k.fmt === 'usd'  ? '$' + k.value.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) :
+        k.fmt === 'int'  ? k.value.toLocaleString('en-US') :
+        k.value + (k.fmt === 'pct' ? '%' : '')
+      }</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ATTENTION TABLE
+// ═══════════════════════════════════════════════════════
+function renderAttentionTable() {
+  const today = new Date();
+  const attention = filteredClaims.filter(r =>
+    r.Availity_Status === 'DENIED' ||
+    (r['Billing status'] === 'Pending' && r['Date of service'] &&
+      ((today - new Date(r['Date of service'])) / 86400000) > 7)
+  );
+
+  document.getElementById('badge-attention').textContent = attention.length;
+
+  // Banner
+  const banner = document.getElementById('attention-banner-wrap');
+  if (attention.length === 0) {
+    banner.innerHTML = '<div style="background:#E8F5E9;border:1px solid #A5D6A7;border-left:4px solid #2E7D32;border-radius:8px;padding:12px 20px;margin-bottom:12px;color:#2E7D32;font-weight:600;font-size:13px;">✅ No claims require immediate attention in the current filter.</div>';
+  } else {
+    const denied = attention.filter(r => r.Availity_Status === 'DENIED').length;
+    const pending = attention.filter(r => r.Availity_Status !== 'DENIED').length;
+    banner.innerHTML = `<div class="attention-banner">⚠️ <strong>${attention.length} claim${attention.length!==1?'s':''} require action</strong> — ${denied} DENIED by Availity · ${pending} Pending &gt;7 days <span class="att-count">${attention.length} total</span></div>`;
+  }
+
+  const tbody = document.getElementById('tbody-attention');
+  tbody.innerHTML = attention.length === 0
+    ? '<tr><td colspan="10" class="empty-state"><div class="empty-icon">✅</div>All clear — no claims need attention</td></tr>'
+    : attention.sort((a,b) => {
+        if (a.Availity_Status === 'DENIED' && b.Availity_Status !== 'DENIED') return -1;
+        if (b.Availity_Status === 'DENIED' && a.Availity_Status !== 'DENIED') return 1;
+        return (b.Amount||0) - (a.Amount||0);
+      }).map(r => `
+      <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : ''}">
+        <td><strong>${r['Claim ID'] || '—'}</strong></td>
+        <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
+        <td>${r['Current Coordinator'] || '—'}</td>
+        <td>${r['Plan type'] || '—'}</td>
+        <td>${r['Tier type'] || '—'} ${r['Tier level'] || ''}</td>
+        <td class="numeric"><strong>${fmtUSD(r.Amount)}</strong></td>
+        <td>${r['Date of service'] || '—'}</td>
+        <td>${pillBilling(r['Billing status'])}</td>
+        <td>${pillAvailty(r.Availity_Status)}</td>
+        <td class="numeric">${fmtUSD(r.Availity_PaidAmount)}</td>
+      </tr>`).join('');
+
+  document.getElementById('attention-footer-count').textContent =
+    attention.length + ' claim' + (attention.length !== 1 ? 's' : '') + ' requiring attention';
+}
+
+// ═══════════════════════════════════════════════════════
+// ALL CLAIMS TABLE (PAGINATED)
+// ═══════════════════════════════════════════════════════
+function renderAllClaimsTable() {
+  const data   = filteredClaims;
+  const total  = data.length;
+  const pages  = Math.ceil(total / PAGE_SIZE);
+  const start  = (allClaimsPage - 1) * PAGE_SIZE;
+  const slice  = data.slice(start, start + PAGE_SIZE);
+
+  document.getElementById('badge-all').textContent = total;
+
+  const tbody = document.getElementById('tbody-all');
+  tbody.innerHTML = slice.length === 0
+    ? '<tr><td colspan="11" class="empty-state"><div class="empty-icon">🔍</div>No claims match the current filters</td></tr>'
+    : slice.map(r => `
+      <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : r.Availity_Status === 'PAID' ? 'row-paid' : ''}">
+        <td>${r['Claim ID'] || '—'}</td>
+        <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
+        <td>${r['DOB'] || '—'}</td>
+        <td>${r['Current Coordinator'] || '—'}</td>
+        <td>${r['Plan type'] || '—'}</td>
+        <td>${r['Tier type'] || '—'} ${r['Tier level'] || ''}</td>
+        <td class="numeric">${fmtUSD(r.Amount)}</td>
+        <td>${r['Date of service'] || '—'}</td>
+        <td>${pillBilling(r['Billing status'])}</td>
+        <td>${pillAvailty(r.Availity_Status)}</td>
+        <td class="numeric">${fmtUSD(r.Availity_PaidAmount)}</td>
+      </tr>`).join('');
+
+  document.getElementById('all-footer-count').textContent =
+    `Showing ${start+1}–${Math.min(start+PAGE_SIZE, total)} of ${total} claims`;
+
+  // Pagination
+  const pag = document.getElementById('pagination-all');
+  pag.innerHTML = '';
+  if (pages > 1) {
+    const addBtn = (label, page, active) => {
+      const b = document.createElement('button');
+      b.className = 'page-btn' + (active ? ' active' : '');
+      b.textContent = label;
+      b.onclick = () => { allClaimsPage = page; renderAllClaimsTable(); };
+      pag.appendChild(b);
+    };
+    if (allClaimsPage > 1) addBtn('‹', allClaimsPage - 1, false);
+    for (let i = Math.max(1, allClaimsPage-2); i <= Math.min(pages, allClaimsPage+2); i++) {
+      addBtn(i, i, i === allClaimsPage);
+    }
+    if (allClaimsPage < pages) addBtn('›', allClaimsPage + 1, false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// COORDINATOR TABLE
+// ═══════════════════════════════════════════════════════
+function renderCoordTable() {
+  const tbody = document.getElementById('tbody-coord');
+  tbody.innerHTML = DASHBOARD_DATA.by_coordinator.map(r => `
+    <tr>
+      <td><strong>${r.Coordinator || '—'}</strong></td>
+      <td class="numeric">${r.Total_Claims}</td>
+      <td class="numeric">${fmtUSD(r.Amount_Billed)}</td>
+      <td class="numeric">${fmtUSD(r.Amount_Collected)}</td>
+      <td class="numeric">${r.Pending}</td>
+      <td class="numeric">${r.Approved}</td>
+      <td class="numeric">${r.Billed}</td>
+      <td class="numeric"><span class="pill pill-paid">${r.Paid_Availity}</span></td>
+      <td class="numeric"><span class="pill pill-denied">${r.Denied_Availity}</span></td>
+      <td class="numeric">${r.Approval_Rate != null ? (r.Approval_Rate * 100).toFixed(0) + '%' : '—'}</td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════
+const GIP_COLORS = [
+  '#1B365D','#00897B','#3C537C','#4DB6AC','#5C7FAE',
+  '#26A69A','#7E57C2','#42A5F5','#66BB6A','#FFA726','#EF5350'
+];
+
+function renderCharts() {
+  // Billing Status Pie
+  const bsCounts = {};
+  DASHBOARD_DATA.claims_detail.forEach(r => {
+    const s = r['Billing status'] || 'Unknown';
+    bsCounts[s] = (bsCounts[s] || 0) + 1;
+  });
+  charts.billing = new Chart(document.getElementById('chartBilling'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(bsCounts),
+      datasets: [{ data: Object.values(bsCounts), backgroundColor: ['#E65100','#1565C0','#4527A0','#455A64'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  // Availity Doughnut
+  const avCounts = { PAID:0, DENIED:0, 'No Response':0 };
+  DASHBOARD_DATA.claims_detail.forEach(r => {
+    if (r.Availity_Status === 'PAID') avCounts.PAID++;
+    else if (r.Availity_Status === 'DENIED') avCounts.DENIED++;
+    else avCounts['No Response']++;
+  });
+  charts.availity = new Chart(document.getElementById('chartAvaility'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(avCounts),
+      datasets: [{ data: Object.values(avCounts), backgroundColor: ['#2E7D32','#C62828','#78909C'], borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
+  });
+
+  // Coordinator Bar
+  const coords = DASHBOARD_DATA.by_coordinator.slice(0, 10);
+  charts.coord = new Chart(document.getElementById('chartCoordinator'), {
+    type: 'bar',
+    data: {
+      labels: coords.map(r => (r.Coordinator||'Unknown').split(' ').slice(-1)[0]),
+      datasets: [
+        { label: 'Billed ($)', data: coords.map(r => r.Amount_Billed||0), backgroundColor: '#1B365D', borderRadius: 3 },
+        { label: 'Collected ($)', data: coords.map(r => r.Amount_Collected||0), backgroundColor: '#00897B', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position:'top', labels:{ font:{size:11}, padding:12 } } },
+      scales: {
+        x: { grid: { display:false }, ticks: { font:{ size:10 } } },
+        y: { grid: { color:'#EEF1F5' }, ticks: { font:{ size:10 }, callback: v => '$' + (v/1000).toFixed(0)+'k' } }
+      }
+    }
+  });
+}
+
+function updateCharts() {
+  // Update billing status chart with filtered data
+  const bsCounts = {};
+  filteredClaims.forEach(r => {
+    const s = r['Billing status'] || 'Unknown';
+    bsCounts[s] = (bsCounts[s] || 0) + 1;
+  });
+  if (charts.billing) {
+    charts.billing.data.labels = Object.keys(bsCounts);
+    charts.billing.data.datasets[0].data = Object.values(bsCounts);
+    charts.billing.update();
+  }
+
+  const avCounts = { PAID:0, DENIED:0, 'No Response':0 };
+  filteredClaims.forEach(r => {
+    if (r.Availity_Status === 'PAID') avCounts.PAID++;
+    else if (r.Availity_Status === 'DENIED') avCounts.DENIED++;
+    else avCounts['No Response']++;
+  });
+  if (charts.availity) {
+    charts.availity.data.datasets[0].data = Object.values(avCounts);
+    charts.availity.update();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// TABLE UTILITIES
+// ═══════════════════════════════════════════════════════
+let sortState = {};
+function sortTable(tableId, colIdx) {
+  const tbl = document.getElementById(tableId);
+  const tbody = tbl.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const key = tableId + '_' + colIdx;
+  const asc = sortState[key] = !sortState[key];
+
+  // Update header indicators
+  tbl.querySelectorAll('thead th').forEach((th, i) => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (i === colIdx) th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+  });
+
+  rows.sort((a, b) => {
+    const av = a.cells[colIdx]?.textContent.trim() || '';
+    const bv = b.cells[colIdx]?.textContent.trim() || '';
+    const an = parseFloat(av.replace(/[$,%]/g,''));
+    const bn = parseFloat(bv.replace(/[$,%]/g,''));
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an-bn : bn-an;
+    return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+function filterTableSearch(tableId, searchId) {
+  const q = document.getElementById(searchId).value.toLowerCase();
+  document.querySelectorAll('#' + tableId + ' tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+function toggleSection(id) {
+  const body = document.getElementById(id);
+  const header = body.previousElementSibling;
+  body.classList.toggle('collapsed');
+  header.classList.toggle('collapsed');
+  if (body.style.maxHeight && body.style.maxHeight !== '0px') {
+    body.style.maxHeight = '0px';
+  } else {
+    body.style.maxHeight = body.scrollHeight + 'px';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// FORMATTERS
+// ═══════════════════════════════════════════════════════
+function fmtUSD(v) {
+  if (v === null || v === undefined || v === 0) return '<span style="color:#B0BEC5">—</span>';
+  return '$' + parseFloat(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function pillBilling(s) {
+  if (!s) return '<span class="pill pill-none">—</span>';
+  const cls = {Pending:'pill-pending',Approved:'pill-approved',Billed:'pill-billed'}[s] || 'pill-none';
+  return `<span class="pill ${cls}">${s}</span>`;
+}
+
+function pillAvailty(s) {
+  if (!s) return '<span class="pill pill-none">No Response</span>';
+  const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s] || 'pill-none';
+  return `<span class="pill ${cls}">${s}</span>`;
+}
+</script>
+</body>
+</html>
