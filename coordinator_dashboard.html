@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>OneHap Coordinator Dashboard — GIP</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy:#1B365D; --navy-dark:#112040; --teal:#00897B; --teal-light:#E0F2F1;
+  --blue:#3C537C; --danger:#C62828; --danger-light:#FFEBEE;
+  --warning:#E65100; --warning-light:#FFF3E0; --success:#2E7D32; --success-light:#E8F5E9;
+  --bg:#F4F6F8; --card:#FFFFFF; --text:#1A1A2E; --text-muted:#6B7280;
+  --border:#E2E8F0; --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* HEADER */
+.page-header{background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy) 60%,var(--blue) 100%);
+  color:white;padding:16px 28px;display:flex;align-items:center;
+  justify-content:space-between;gap:20px;flex-wrap:wrap}
+.header-brand{display:flex;align-items:center;gap:14px}
+.logo-badge{width:44px;height:44px;border-radius:10px;background:var(--teal);color:white;
+  font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center}
+.brand-title{font-size:18px;font-weight:700}
+.brand-sub{font-size:11px;opacity:.7;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.coord-picker label{display:block;font-size:10px;opacity:.7;margin-bottom:4px;
+  text-transform:uppercase;letter-spacing:.5px}
+.coord-picker select{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  color:white;padding:7px 14px;border-radius:6px;font-size:13px;min-width:220px;cursor:pointer}
+.coord-picker select option{background:var(--navy);color:white}
+.data-meta{text-align:right;font-size:11px;opacity:.8}
+
+/* STATES */
+#loading-state,#welcome-state{display:flex;align-items:center;justify-content:center;min-height:60vh}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--teal);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.welcome-card{background:white;border-radius:16px;padding:60px 48px;text-align:center;
+  max-width:480px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.welcome-icon{font-size:48px;margin-bottom:20px}
+.welcome-card h2{color:var(--navy);margin-bottom:12px;font-size:20px}
+.welcome-card p{color:var(--text-muted);line-height:1.6}
+
+/* LAYOUT */
+.app-body{padding:24px 28px;max-width:1400px;margin:0 auto}
+.section{background:var(--card);border-radius:var(--radius);padding:20px 24px;
+  margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.section-icon{font-size:18px}
+.section-header h2{font-size:15px;font-weight:700;color:var(--navy)}
+.section-line{flex:1;height:1px;background:var(--border)}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px}
+.kpi-card{border-radius:10px;padding:16px;border-left:4px solid}
+.kpi-card.navy{border-color:var(--navy);background:#EEF2F8}
+.kpi-card.teal{border-color:var(--teal);background:var(--teal-light)}
+.kpi-card.blue{border-color:var(--blue);background:#EEF2F8}
+.kpi-card.danger{border-color:var(--danger);background:var(--danger-light)}
+.kpi-card.warning{border-color:var(--warning);background:var(--warning-light)}
+.kpi-card.success{border-color:var(--success);background:var(--success-light)}
+.kpi-icon{font-size:22px;margin-bottom:8px}
+.kpi-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text-muted);margin-bottom:6px}
+.kpi-value{font-size:22px;font-weight:800;color:var(--navy);line-height:1.1}
+.kpi-sub{font-size:10px;color:var(--text-muted);margin-top:4px}
+
+/* TEAM COMPARISON */
+.comparison-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.comparison-card{background:#F8FAFC;border-radius:10px;padding:18px}
+.comparison-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:14px}
+.comparison-row{margin-bottom:10px}
+.comparison-row-label{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.comparison-row-label .name{font-weight:600;color:var(--navy)}
+.comparison-row-label .val{font-weight:700}
+.bar-track{background:#E2E8F0;border-radius:99px;height:9px;overflow:hidden}
+.bar-fill{height:100%;border-radius:99px;transition:width .5s ease}
+.bar-me{background:var(--teal)}
+.bar-team{background:#94A3B8}
+.comparison-legend{display:flex;gap:16px;margin-top:12px;font-size:10px;color:var(--text-muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+
+/* ATTENTION */
+.attention-banner{background:var(--danger-light);border:1px solid #EF9A9A;
+  border-left:4px solid var(--danger);border-radius:8px;padding:12px 20px;
+  margin-bottom:14px;color:var(--danger);font-weight:600;font-size:13px;
+  display:flex;align-items:center;gap:12px}
+.att-count{margin-left:auto;background:var(--danger);color:white;
+  padding:2px 10px;border-radius:20px;font-size:12px}
+
+/* TABLES */
+.table-toolbar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.table-toolbar input,.table-toolbar select{border:1px solid var(--border);border-radius:6px;
+  padding:7px 12px;font-size:12px;outline:none}
+.table-toolbar input{flex:1;min-width:180px}
+.table-toolbar input:focus,.table-toolbar select:focus{border-color:var(--teal)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--navy);color:white}
+th{padding:9px 12px;font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.4px;text-align:left;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:hover{background:#F0F7FF}
+tr.row-denied{background:#FFF5F5}
+tr.row-denied:hover{background:#FFE8E8}
+.numeric{text-align:right;font-variant-numeric:tabular-nums}
+.empty-state{text-align:center;padding:40px;color:var(--text-muted)}
+
+/* PILLS */
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill-pending{background:#FFF3E0;color:#E65100}
+.pill-approved{background:#E3F2FD;color:#1565C0}
+.pill-billed{background:#E8F5E9;color:#2E7D32}
+.pill-paid{background:#E8F5E9;color:#2E7D32}
+.pill-denied{background:var(--danger-light);color:var(--danger)}
+.pill-none{background:#F1F5F9;color:var(--text-muted)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;justify-content:center;
+  min-width:22px;height:22px;border-radius:11px;font-size:11px;font-weight:700;padding:0 7px}
+.badge-danger{background:var(--danger);color:white}
+.badge-blue{background:var(--navy);color:white}
+.badge-teal{background:var(--teal);color:white}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════ HEADER -->
+<div class="page-header">
+  <div class="header-brand">
+    <div class="logo-badge">GIP</div>
+    <div>
+      <div class="brand-title">OneHap Coordinator Dashboard</div>
+      <div class="brand-sub">My Claims · My Performance · Action Required</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="coord-picker">
+      <label for="coord-select">Coordinator</label>
+      <select id="coord-select" onchange="onCoordChange()">
+        <option value="">— Select your name —</option>
+      </select>
+    </div>
+    <div class="data-meta">
+      <div id="hdr-date"></div>
+      <div id="hdr-time" style="opacity:.7"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ LOADING -->
+<div id="loading-state"><div class="spinner"></div></div>
+
+<!-- ══════════════════════════════════════ WELCOME -->
+<div id="welcome-state" style="display:none">
+  <div class="welcome-card">
+    <div class="welcome-icon">👋</div>
+    <h2>Welcome to your personal dashboard</h2>
+    <p style="margin-top:10px">Select your name from the dropdown above to see your claims, performance metrics, and action items requiring follow-up.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ MAIN DASHBOARD -->
+<div id="coord-dashboard" style="display:none">
+  <div class="app-body">
+
+    <!-- MY KPIS -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📊</span>
+        <h2>My Performance — <span id="coord-name-title" style="color:var(--teal)"></span></h2>
+        <div class="section-line"></div>
+        <small style="color:var(--text-muted);font-size:11px" id="kpi-period"></small>
+      </div>
+      <div class="kpi-grid" id="coord-kpi-grid"></div>
+    </div>
+
+    <!-- TEAM COMPARISON -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">👥</span>
+        <h2>vs. Team Average</h2>
+        <div class="section-line"></div>
+        <small style="color:var(--text-muted);font-size:11px">My metrics compared to other coordinators</small>
+      </div>
+      <div class="comparison-grid" id="comparison-grid"></div>
+    </div>
+
+    <!-- NEEDS ATTENTION -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">⚠️</span>
+        <h2>Needs My Attention</h2>
+        <span class="badge badge-danger" id="my-attention-badge">0</span>
+        <div class="section-line"></div>
+        <small style="color:var(--text-muted);font-size:11px">DENIED + all Pending claims</small>
+      </div>
+      <div id="my-attention-banner"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Claim ID</th><th>Patient</th><th>Plan</th><th>Tier</th>
+            <th class="numeric">Amount ($)</th><th>Service Date</th>
+            <th>Billing</th><th>Availity</th><th class="numeric">Collected ($)</th>
+          </tr></thead>
+          <tbody id="tbody-my-attention"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ALL MY CLAIMS -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">📋</span>
+        <h2>All My Claims</h2>
+        <span class="badge badge-blue" id="my-claims-badge">0</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="table-toolbar">
+        <input type="text" id="search-my-claims" placeholder="Search patient, claim ID, plan…" oninput="renderMyClaims()"/>
+        <select id="filter-my-billing" onchange="renderMyClaims()">
+          <option value="">All Billing Status</option>
+          <option>Pending</option><option>Approved</option><option>Billed</option>
+        </select>
+        <select id="filter-my-availity" onchange="renderMyClaims()">
+          <option value="">All Availity</option>
+          <option>PAID</option><option>DENIED</option>
+          <option value="null">No Response</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Claim ID</th><th>Patient</th><th>DOB</th><th>Plan</th><th>Tier</th>
+            <th class="numeric">Amount ($)</th><th>Service Date</th>
+            <th>Billing</th><th>Availity</th><th class="numeric">Collected ($)</th>
+          </tr></thead>
+          <tbody id="tbody-my-claims"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);text-align:right;margin-top:8px" id="my-claims-footer"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let DASHBOARD_DATA = null;
+let currentCoord   = null;
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+async function init() {
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DASHBOARD_DATA = await res.json();
+    onDataLoaded();
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML =
+      '<div style="text-align:center;padding:60px;color:#c62828">' +
+      '<h2>⚠️ Could not load data</h2>' +
+      '<p>Make sure <strong>data.json</strong> is in the same folder as this file.</p>' +
+      '<p style="font-size:11px;opacity:.6;margin-top:8px">Error: ' + e.message + '</p></div>';
+  }
+}
+
+function onDataLoaded() {
+  const m = DASHBOARD_DATA.meta;
+  document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
+  document.getElementById('hdr-time').textContent = 'Generated: '  + (m.generated_at_full || '—');
+
+  const coords = [...new Set(
+    DASHBOARD_DATA.claims_detail.map(r => r['Current Coordinator']).filter(Boolean)
+  )].sort();
+  const sel = document.getElementById('coord-select');
+  coords.forEach(c => { const o = document.createElement('option'); o.value = o.textContent = c; sel.appendChild(o); });
+
+  // Support URL param: coordinator_dashboard.html?coord=Meghan+Maher
+  const urlCoord = new URLSearchParams(window.location.search).get('coord');
+  if (urlCoord && coords.includes(urlCoord)) {
+    sel.value = urlCoord;
+    loadCoordinator(urlCoord);
+  } else {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('welcome-state').style.display = 'flex';
+  }
+}
+
+function onCoordChange() {
+  const v = document.getElementById('coord-select').value;
+  if (v) { loadCoordinator(v); }
+  else {
+    document.getElementById('coord-dashboard').style.display = 'none';
+    document.getElementById('welcome-state').style.display = 'flex';
+  }
+}
+
+function loadCoordinator(name) {
+  currentCoord = name;
+  document.getElementById('loading-state').style.display  = 'none';
+  document.getElementById('welcome-state').style.display  = 'none';
+  document.getElementById('coord-dashboard').style.display = 'block';
+  document.getElementById('coord-name-title').textContent = name;
+
+  const mine = DASHBOARD_DATA.claims_detail.filter(r => r['Current Coordinator'] === name);
+  document.getElementById('kpi-period').textContent = mine.length + ' claims this period';
+
+  renderCoordKPIs(mine);
+  renderTeamComparison(name, mine);
+  renderMyAttention(mine);
+  renderMyClaims();
+}
+
+// ══════════════════════════════════════════════════
+// MY KPI CARDS
+// ══════════════════════════════════════════════════
+function renderCoordKPIs(claims) {
+  const total     = claims.length;
+  const billed    = claims.reduce((s,r) => s + (r.Amount||0), 0);
+  const collected = claims.reduce((s,r) => s + (r.Availity_PaidAmount||0), 0);
+  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID').length;
+  const denied_n  = claims.filter(r => r.Availity_Status === 'DENIED').length;
+  const pending_n = claims.filter(r => r['Billing status'] === 'Pending').length;
+  const avail_tot = paid_n + denied_n;
+  const appr_rate = avail_tot > 0 ? (paid_n / avail_tot * 100).toFixed(1) : null;
+
+  const cards = [
+    { icon:'📋', label:'My Claims',       value: total,     fmt:'int', color:'navy',
+      sub:'submitted this period' },
+    { icon:'💰', label:'My Billed',       value: billed,    fmt:'usd', color:'blue',
+      sub:'total amount billed' },
+    { icon:'✅', label:'My Collected',    value: collected, fmt:'usd', color:'teal',
+      sub:'confirmed PAID by Availity' },
+    { icon:'📊', label:'Approval Rate',
+      value: appr_rate !== null ? appr_rate + '%' : '—', fmt:'raw',
+      color: appr_rate === null ? 'navy' : parseFloat(appr_rate) >= 80 ? 'success' : parseFloat(appr_rate) >= 60 ? 'warning' : 'danger',
+      sub: paid_n + ' PAID / ' + denied_n + ' DENIED' },
+    { icon:'🚫', label:'DENIED',          value: denied_n,  fmt:'int',
+      color: denied_n > 0 ? 'danger' : 'success', sub:'require follow-up' },
+    { icon:'⏳', label:'Pending',         value: pending_n, fmt:'int',
+      color: pending_n > 5 ? 'warning' : 'navy',  sub:'awaiting processing' },
+  ];
+
+  document.getElementById('coord-kpi-grid').innerHTML = cards.map(k => `
+    <div class="kpi-card ${k.color}">
+      <div class="kpi-icon">${k.icon}</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${
+        k.fmt === 'usd' ? '$' + k.value.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) :
+        k.fmt === 'int' ? k.value.toLocaleString() : k.value
+      }</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// TEAM COMPARISON
+// ══════════════════════════════════════════════════
+function coordMetrics(claims) {
+  const billed    = claims.reduce((s,r) => s + (r.Amount||0), 0);
+  const collected = claims.reduce((s,r) => s + (r.Availity_PaidAmount||0), 0);
+  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID').length;
+  const denied_n  = claims.filter(r => r.Availity_Status === 'DENIED').length;
+  const avail_tot = paid_n + denied_n;
+  return {
+    approvalRate:    avail_tot > 0 ? paid_n / avail_tot * 100 : null,
+    collectionRate:  billed    > 0 ? collected / billed * 100 : null,
+    claimsPerWeek:   claims.length,
+    billed, collected
+  };
+}
+
+function renderTeamComparison(coordName, myClaims) {
+  const allClaims = DASHBOARD_DATA.claims_detail;
+  const allCoords = [...new Set(allClaims.map(r => r['Current Coordinator']).filter(Boolean))];
+  const me        = coordMetrics(myClaims);
+
+  const teamAll = allCoords
+    .filter(c => c !== coordName)
+    .map(c => coordMetrics(allClaims.filter(r => r['Current Coordinator'] === c)));
+  const teamWithApproval    = teamAll.filter(m => m.approvalRate   !== null);
+  const teamWithCollection  = teamAll.filter(m => m.collectionRate !== null);
+
+  const teamAvgApproval   = teamWithApproval.length   > 0 ? teamWithApproval.reduce((s,m)   => s + m.approvalRate,   0) / teamWithApproval.length   : null;
+  const teamAvgCollection = teamWithCollection.length > 0 ? teamWithCollection.reduce((s,m) => s + m.collectionRate, 0) / teamWithCollection.length : null;
+  const teamAvgClaims     = teamAll.length > 0 ? teamAll.reduce((s,m) => s + m.claimsPerWeek, 0) / teamAll.length : null;
+
+  const comparisons = [
+    { label:'Approval Rate',    myVal: me.approvalRate,   teamVal: teamAvgApproval,   unit:'%',  fmt:'pct' },
+    { label:'Collection Rate',  myVal: me.collectionRate, teamVal: teamAvgCollection, unit:'%',  fmt:'pct' },
+    { label:'Claims Count',     myVal: me.claimsPerWeek,  teamVal: teamAvgClaims,     unit:'',   fmt:'num' },
+  ];
+
+  if (comparisons.every(c => c.myVal === null)) {
+    document.getElementById('comparison-grid').innerHTML =
+      '<div style="color:var(--text-muted);font-size:13px;padding:20px 0">No Availity responses yet — comparison will appear once claims are processed by Availity.</div>';
+    return;
+  }
+
+  document.getElementById('comparison-grid').innerHTML = comparisons.map(c => {
+    const myFmt   = c.myVal   !== null ? (c.fmt==='pct' ? c.myVal.toFixed(1)+'%'   : Math.round(c.myVal).toString())   : '—';
+    const tmFmt   = c.teamVal !== null ? (c.fmt==='pct' ? c.teamVal.toFixed(1)+'%' : Math.round(c.teamVal).toString()) : '—';
+    const max     = Math.max(c.myVal||0, c.teamVal||0, c.fmt==='pct'?100:1) * 1.05;
+    const meBar   = c.myVal   !== null ? Math.min(100,(c.myVal   / max)*100) : 0;
+    const tmBar   = c.teamVal !== null ? Math.min(100,(c.teamVal / max)*100) : 0;
+    const myColor = (c.myVal !== null && c.teamVal !== null)
+      ? (c.myVal >= c.teamVal ? 'color:var(--success)' : 'color:var(--danger)') : '';
+    const firstName = coordName.split(' ')[0];
+    return `<div class="comparison-card">
+      <div class="comparison-label">${c.label}</div>
+      <div class="comparison-row">
+        <div class="comparison-row-label">
+          <span class="name">Me (${firstName})</span>
+          <span class="val" style="${myColor}">${myFmt}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bar-me" style="width:${meBar.toFixed(1)}%"></div></div>
+      </div>
+      <div class="comparison-row">
+        <div class="comparison-row-label">
+          <span class="name">Team Average</span>
+          <span class="val">${tmFmt}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill bar-team" style="width:${tmBar.toFixed(1)}%"></div></div>
+      </div>
+      <div class="comparison-legend">
+        <span><span class="legend-dot" style="background:var(--teal)"></span>Me</span>
+        <span><span class="legend-dot" style="background:#94A3B8"></span>Team Avg</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════
+// NEEDS MY ATTENTION
+// ══════════════════════════════════════════════════
+function renderMyAttention(claims) {
+  const attention = claims
+    .filter(r => r.Availity_Status === 'DENIED' || r['Billing status'] === 'Pending')
+    .sort((a,b) => {
+      if (a.Availity_Status==='DENIED' && b.Availity_Status!=='DENIED') return -1;
+      if (b.Availity_Status==='DENIED' && a.Availity_Status!=='DENIED') return  1;
+      return (b.Amount||0) - (a.Amount||0);
+    });
+
+  document.getElementById('my-attention-badge').textContent = attention.length;
+
+  const banner = document.getElementById('my-attention-banner');
+  if (attention.length === 0) {
+    banner.innerHTML = '<div style="background:#E8F5E9;border:1px solid #A5D6A7;border-left:4px solid #2E7D32;border-radius:8px;padding:12px 20px;margin-bottom:14px;color:#2E7D32;font-weight:600;font-size:13px;">✅ All your claims are clear — nothing needs immediate action.</div>';
+  } else {
+    const denied  = attention.filter(r => r.Availity_Status === 'DENIED').length;
+    const pending = attention.length - denied;
+    banner.innerHTML = `<div class="attention-banner">⚠️ <strong>${attention.length} claim${attention.length!==1?'s':''} need your attention</strong> — ${denied} DENIED · ${pending} Pending <span class="att-count">${attention.length} total</span></div>`;
+  }
+
+  document.getElementById('tbody-my-attention').innerHTML = attention.length === 0
+    ? '<tr><td colspan="9" class="empty-state">✅ Nothing requires action right now</td></tr>'
+    : attention.map(r => `<tr class="${r.Availity_Status==='DENIED'?'row-denied':''}">
+        <td><strong>${r['Claim ID']||'—'}</strong></td>
+        <td>${r['Last name']||'—'}, ${r['First name']||'—'}</td>
+        <td>${r['Plan type']||'—'}</td>
+        <td>${(r['Tier type']||'—')+' '+(r['Tier level']||'')}</td>
+        <td class="numeric"><strong>${fmtUSD(r.Amount)}</strong></td>
+        <td>${r['Date of service']||'—'}</td>
+        <td>${pillBilling(r['Billing status'])}</td>
+        <td>${pillAvailty(r.Availity_Status)}</td>
+        <td class="numeric">${fmtUSD(r.Availity_PaidAmount)}</td>
+      </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// ALL MY CLAIMS
+// ══════════════════════════════════════════════════
+function renderMyClaims() {
+  if (!currentCoord) return;
+  const search   = (document.getElementById('search-my-claims').value||'').toLowerCase();
+  const billing  = document.getElementById('filter-my-billing').value;
+  const availity = document.getElementById('filter-my-availity').value;
+
+  let filtered = DASHBOARD_DATA.claims_detail.filter(r => r['Current Coordinator'] === currentCoord);
+
+  if (search) filtered = filtered.filter(r =>
+    (r['Last name'] ||'').toLowerCase().includes(search) ||
+    (r['First name']||'').toLowerCase().includes(search) ||
+    (r['Claim ID']  ||'').toLowerCase().includes(search) ||
+    (r['Plan type'] ||'').toLowerCase().includes(search)
+  );
+  if (billing)          filtered = filtered.filter(r => r['Billing status'] === billing);
+  if (availity==='null') filtered = filtered.filter(r => !r['Availity_Status']);
+  else if (availity)    filtered = filtered.filter(r => r['Availity_Status'] === availity);
+
+  filtered.sort((a,b) => (b['Date of service']||'').localeCompare(a['Date of service']||''));
+
+  document.getElementById('my-claims-badge').textContent = filtered.length;
+  document.getElementById('my-claims-footer').textContent = filtered.length + ' claim' + (filtered.length!==1?'s':'') + ' shown';
+
+  document.getElementById('tbody-my-claims').innerHTML = filtered.length === 0
+    ? '<tr><td colspan="10" class="empty-state">No claims match the current filters</td></tr>'
+    : filtered.map(r => `<tr class="${r.Availity_Status==='DENIED'?'row-denied':''}">
+        <td><strong>${r['Claim ID']||'—'}</strong></td>
+        <td>${r['Last name']||'—'}, ${r['First name']||'—'}</td>
+        <td>${r['DOB']||'—'}</td>
+        <td>${r['Plan type']||'—'}</td>
+        <td>${(r['Tier type']||'—')+' '+(r['Tier level']||'')}</td>
+        <td class="numeric"><strong>${fmtUSD(r.Amount)}</strong></td>
+        <td>${r['Date of service']||'—'}</td>
+        <td>${pillBilling(r['Billing status'])}</td>
+        <td>${pillAvailty(r.Availity_Status)}</td>
+        <td class="numeric">${fmtUSD(r.Availity_PaidAmount)}</td>
+      </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════
+function fmtUSD(v) {
+  if (v==null||isNaN(v)) return '—';
+  return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function pillBilling(s) {
+  if (!s) return '<span class="pill pill-none">—</span>';
+  const cls = {Pending:'pill-pending',Approved:'pill-approved',Billed:'pill-billed'}[s]||'pill-none';
+  return `<span class="pill ${cls}">${s}</span>`;
+}
+function pillAvailty(s) {
+  if (!s) return '<span class="pill pill-none">No Response</span>';
+  const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s]||'pill-none';
+  return `<span class="pill ${cls}">${s}</span>`;
+}
+
+// Start
+init();
+</script>
+</body>
+</html>
