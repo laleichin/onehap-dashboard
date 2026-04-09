@@ -132,6 +132,23 @@ a:hover { text-decoration: underline; }
   transition: all .2s;
 }
 .btn-clear:hover { border-color: var(--navy); color: var(--navy); }
+.btn-quick {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--blue);
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-quick:hover, .btn-quick.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
 .filter-count {
   background: var(--teal);
   color: #fff;
@@ -140,6 +157,16 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
   font-weight: 600;
   align-self: flex-end;
+  white-space: nowrap;
+}
+.period-badge {
+  background: var(--blue);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 10px;
+  letter-spacing: .3px;
   white-space: nowrap;
 }
 
@@ -179,7 +206,7 @@ a:hover { text-decoration: underline; }
 /* ── KPI CARDS ─────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -187,35 +214,36 @@ a:hover { text-decoration: underline; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px 20px;
+  padding: 20px 20px 16px;
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
   transition: box-shadow .2s, transform .2s;
 }
-.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .kpi-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 3px;
+  height: 4px;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
-.kpi-card.navy::before  { background: var(--navy); }
-.kpi-card.teal::before  { background: var(--teal); }
-.kpi-card.blue::before  { background: var(--blue); }
-.kpi-card.danger::before { background: var(--danger); }
-.kpi-card.warning::before { background: var(--warning); }
-.kpi-card.success::before { background: var(--success); }
+.kpi-card.navy::before  { background: linear-gradient(90deg, var(--navy), var(--blue-light)); }
+.kpi-card.teal::before  { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
+.kpi-card.blue::before  { background: linear-gradient(90deg, var(--blue), var(--blue-light)); }
+.kpi-card.danger::before { background: linear-gradient(90deg, var(--danger), #EF9A9A); }
+.kpi-card.warning::before { background: linear-gradient(90deg, var(--warning), #FFB74D); }
+.kpi-card.success::before { background: linear-gradient(90deg, var(--success), #66BB6A); }
 .kpi-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .5px;
-  color: var(--text-secondary);
+  letter-spacing: .6px;
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 .kpi-value {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
@@ -225,13 +253,25 @@ a:hover { text-decoration: underline; }
 .kpi-sub {
   font-size: 11px;
   color: var(--text-muted);
-  margin-top: 6px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.kpi-sub .kpi-tag {
+  display: inline-block;
+  background: var(--border-light);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 .kpi-icon {
   position: absolute;
   top: 16px; right: 16px;
-  font-size: 22px;
-  opacity: .12;
+  font-size: 24px;
+  opacity: .08;
 }
 
 /* ── ATTENTION BANNER ──────────────────────────────── */
@@ -437,6 +477,11 @@ td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
       <div class="date" id="hdr-date">Loading...</div>
       <div class="time" id="hdr-time">—</div>
     </div>
+    <div style="width:1px;height:32px;background:rgba(255,255,255,.2)"></div>
+    <div style="text-align:center">
+      <div style="font-size:10px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Status</div>
+      <div id="hdr-status" style="font-size:11px;font-weight:700;color:#80CBC4;">● Live</div>
+    </div>
   </div>
 </header>
 
@@ -479,8 +524,46 @@ td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
       <select id="filter-plan"><option value="">All Plans</option></select>
     </div>
     <div class="filter-actions">
+      <button class="btn-quick" onclick="setLast7Days()" id="btn-7d">Last 7 days</button>
+      <button class="btn-quick" onclick="setThisMonth()" id="btn-month">This month</button>
       <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
       <div class="filter-count" id="filter-count">— claims</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ KPI CARDS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📊</span>
+      <h2>Executive KPIs</h2>
+      <div class="section-line"></div>
+      <span class="period-badge" id="period-label">All time</span>
+    </div>
+    <div class="kpi-grid" id="kpi-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ CHARTS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">📈</span>
+      <h2>Performance Analytics</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Billing Status Distribution</h3>
+        <div class="chart-wrap"><canvas id="chartBilling"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Availity Response</h3>
+        <div class="chart-wrap"><canvas id="chartAvaility"></canvas></div>
+      </div>
+      <div class="chart-card chart-wide">
+        <h3>Billed vs. Collected by Coordinator</h3>
+        <div class="chart-wrap tall"><canvas id="chartCoordinator"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -520,41 +603,6 @@ td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
       </div>
       <div class="table-footer">
         <span id="attention-footer-count">Loading…</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ KPI CARDS -->
-  <div class="section">
-    <div class="section-header">
-      <span class="section-icon">📊</span>
-      <h2>Executive KPIs</h2>
-      <div class="section-line"></div>
-    </div>
-    <div class="kpi-grid" id="kpi-grid">
-      <!-- Populated by JS -->
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════ CHARTS -->
-  <div class="section">
-    <div class="section-header">
-      <span class="section-icon">📈</span>
-      <h2>Performance Analytics</h2>
-      <div class="section-line"></div>
-    </div>
-    <div class="charts-row">
-      <div class="chart-card">
-        <h3>Billing Status Distribution</h3>
-        <div class="chart-wrap"><canvas id="chartBilling"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>Availity Response</h3>
-        <div class="chart-wrap"><canvas id="chartAvaility"></canvas></div>
-      </div>
-      <div class="chart-card chart-wide">
-        <h3>Billed vs. Collected by Coordinator</h3>
-        <div class="chart-wrap tall"><canvas id="chartCoordinator"></canvas></div>
       </div>
     </div>
   </div>
@@ -708,14 +756,45 @@ function initFilters() {
   // Event listeners
   ['filter-date-from','filter-date-to','filter-coordinator',
    'filter-billing','filter-availity','filter-plan'].forEach(id => {
-    document.getElementById(id).addEventListener('change', applyFilters);
+    document.getElementById(id).addEventListener('change', () => {
+      clearQuickBtns();
+      applyFilters();
+    });
   });
+
+  // Auto-apply last 7 days on load
+  setLast7Days();
 }
 
 function clearFilters() {
   ['filter-date-from','filter-date-to'].forEach(id => document.getElementById(id).value = '');
   ['filter-coordinator','filter-billing','filter-availity','filter-plan']
     .forEach(id => document.getElementById(id).value = '');
+  clearQuickBtns();
+  applyFilters();
+}
+
+function clearQuickBtns() {
+  document.querySelectorAll('.btn-quick').forEach(b => b.classList.remove('active'));
+}
+
+function setLast7Days() {
+  const today = new Date();
+  const from  = new Date(today); from.setDate(today.getDate() - 6);
+  document.getElementById('filter-date-from').value = from.toISOString().slice(0,10);
+  document.getElementById('filter-date-to').value   = today.toISOString().slice(0,10);
+  clearQuickBtns();
+  document.getElementById('btn-7d').classList.add('active');
+  applyFilters();
+}
+
+function setThisMonth() {
+  const today = new Date();
+  const from  = new Date(today.getFullYear(), today.getMonth(), 1);
+  document.getElementById('filter-date-from').value = from.toISOString().slice(0,10);
+  document.getElementById('filter-date-to').value   = today.toISOString().slice(0,10);
+  clearQuickBtns();
+  document.getElementById('btn-month').classList.add('active');
   applyFilters();
 }
 
@@ -742,6 +821,21 @@ function applyFilters() {
   document.getElementById('filter-count').textContent =
     filteredClaims.length + ' claim' + (filteredClaims.length !== 1 ? 's' : '');
 
+  // Update period badge
+  const dateFrom = document.getElementById('filter-date-from').value;
+  const dateTo   = document.getElementById('filter-date-to').value;
+  const lbl = document.getElementById('period-label');
+  if (lbl) {
+    if (dateFrom && dateTo) {
+      const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'});
+      lbl.textContent = fmt(dateFrom) + ' – ' + fmt(dateTo);
+    } else if (dateFrom) {
+      lbl.textContent = 'From ' + new Date(dateFrom + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    } else {
+      lbl.textContent = 'All time';
+    }
+  }
+
   allClaimsPage = 1;
   renderKPIs();
   renderAttentionTable();
@@ -764,13 +858,35 @@ function renderKPIs() {
   const appr_rate = avail_tot > 0 ? (paid_n / avail_tot * 100).toFixed(1) : '—';
   const coll_rate = billed > 0 ? (collected / billed * 100).toFixed(1) : '0.0';
 
+  const approvalColor  = avail_tot === 0 ? 'navy' : (+appr_rate >= 85 ? 'success' : +appr_rate >= 70 ? 'warning' : 'danger');
+  const collRateColor  = +coll_rate >= 80 ? 'teal' : +coll_rate >= 60 ? 'blue' : 'warning';
+  const deniedColor    = denied_n === 0 ? 'success' : denied_n <= 3 ? 'warning' : 'danger';
+
   const kpis = [
-    { label: 'Total Claims', value: tot, fmt: 'int', color: 'navy', icon: '📋', sub: 'submitted' },
-    { label: 'Amount Billed', value: billed, fmt: 'usd', color: 'blue', icon: '💰', sub: 'total billed' },
-    { label: 'Amount Collected', value: collected, fmt: 'usd', color: 'teal', icon: '✅', sub: 'confirmed by Availity' },
-    { label: 'Approval Rate', value: appr_rate, fmt: 'raw', color: avail_tot > 0 && appr_rate >= 80 ? 'success' : 'warning', icon: '📊', sub: paid_n + ' PAID / ' + denied_n + ' DENIED' },
-    { label: 'Pending Claims', value: pending_n, fmt: 'int', color: pending_n > 10 ? 'warning' : 'navy', icon: '⏳', sub: 'awaiting processing' },
-    { label: 'Collection Rate', value: coll_rate + '%', fmt: 'raw', color: 'teal', icon: '💹', sub: 'of billed amount' },
+    {
+      label: 'Total Claims', value: tot, fmt: 'int', color: 'navy', icon: '📋',
+      sub: `<span class="kpi-tag">${pending_n} Pending</span> · <span class="kpi-tag">${d.filter(r=>r['Billing status']==='Approved').length} Approved</span>`
+    },
+    {
+      label: 'Amount Billed', value: billed, fmt: 'usd', color: 'blue', icon: '💵',
+      sub: `Period total`
+    },
+    {
+      label: 'Amount Collected', value: collected, fmt: 'usd', color: 'teal', icon: '✅',
+      sub: `Confirmed by Availity`
+    },
+    {
+      label: 'Approval Rate', value: appr_rate + '%', fmt: 'raw', color: approvalColor, icon: '📊',
+      sub: `<span class="kpi-tag">${paid_n} PAID</span> / <span class="kpi-tag">${denied_n} DENIED</span>`
+    },
+    {
+      label: 'Collection Rate', value: coll_rate + '%', fmt: 'raw', color: collRateColor, icon: '💹',
+      sub: `Of total billed`
+    },
+    {
+      label: 'DENIED Claims', value: denied_n, fmt: 'int', color: deniedColor, icon: '🚫',
+      sub: denied_n === 0 ? '✓ None — all clear' : `Requires follow-up`
+    },
   ];
 
   const grid = document.getElementById('kpi-grid');
@@ -781,7 +897,7 @@ function renderKPIs() {
       <div class="kpi-value ${k.fmt === 'usd' && k.value > 99999 ? 'large' : ''}">${
         k.fmt === 'usd'  ? '$' + k.value.toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) :
         k.fmt === 'int'  ? k.value.toLocaleString('en-US') :
-        k.value + (k.fmt === 'pct' ? '%' : '')
+        k.value
       }</div>
       <div class="kpi-sub">${k.sub}</div>
     </div>
