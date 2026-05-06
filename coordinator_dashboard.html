@@ -528,7 +528,7 @@ function fmtUSD(v) {
 }
 function pillBilling(s) {
   if (!s) return '<span class="pill pill-none">—</span>';
-  const cls = {Pending:'pill-pending',Approved:'pill-approved',Billed:'pill-billed'}[s]||'pill-none';
+  const cls = {Pending:'pill-pending',Approved:'pill-approved',Billed:'pill-billed',Paid:'pill-paid',Denied:'pill-denied',Rejected:'pill-denied'}[s]||'pill-none';
   return `<span class="pill ${cls}">${s}</span>`;
 }
 function pillAvailty(s) {
