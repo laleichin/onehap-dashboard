@@ -739,6 +739,21 @@ function initMeta() {
   const m = DASHBOARD_DATA.meta;
   document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
   document.getElementById('hdr-time').textContent = 'Generated: ' + (m.generated_at_full || '—');
+
+  // ── Data coverage banner ──────────────────────────────────
+  const matched = m.matched_claims || 0;
+  const total   = m.total_claims   || 1;
+  const pct     = Math.round(matched / total * 100);
+  const src     = m.data_sources   || {};
+  const banner  = document.createElement('div');
+  banner.id     = 'coverage-banner';
+  banner.style.cssText = 'background:#EEF3FB;border:1px solid #C5D5F0;border-left:4px solid #1B365D;border-radius:0;padding:8px 28px;font-size:12px;color:#1B365D;display:flex;gap:24px;flex-wrap:wrap;align-items:center';
+  banner.innerHTML = \`<strong>📡 Data Sources:</strong>
+    <span>OneHap <strong>${total.toLocaleString()}</strong> claims (Jan–May 2026)</span>
+    <span>·  Availity matched <strong>${matched.toLocaleString()}</strong> (${pct}% coverage)</span>
+    <span>·  ERA: <strong>${src.availity_era_files||0}</strong> files · DPR: <strong>${src.availity_dpr_files||0}</strong> files · Amounts confirmed: <strong>${(src.claims_with_amounts||0).toLocaleString()}</strong></span>
+    <span style="margin-left:auto;opacity:.7">ℹ️ Availity window ≈ 90 days — run weekly pull to stay current</span>\`;
+  document.querySelector('.app-header')?.insertAdjacentElement('afterend', banner);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -863,7 +878,7 @@ function renderKPIs() {
   const tot = d.length;
   const billed    = d.reduce((s, r) => s + (r.Amount || 0), 0);
   const collected = d.reduce((s, r) => s + (r.Availity_PaidAmount || 0), 0);
-  const paid_n    = d.filter(r => r.Availity_Status === 'PAID').length;
+  const paid_n    = d.filter(r => r.Availity_Status === 'PAID' || r.Availity_Status === 'PENDING').length;
   const denied_n  = d.filter(r => r.Availity_Status === 'DENIED').length;
   const pending_n = d.filter(r => r['Billing status'] === 'Pending').length;
   const avail_tot = paid_n + denied_n;
@@ -1059,17 +1074,18 @@ function renderCharts() {
   });
 
   // Availity Doughnut
-  const avCounts = { PAID:0, DENIED:0, 'No Response':0 };
+  const avCounts = {'PAID':0,'PENDING':0,'DENIED':0,'No Response':0};
   DASHBOARD_DATA.claims_detail.forEach(r => {
-    if (r.Availity_Status === 'PAID') avCounts.PAID++;
-    else if (r.Availity_Status === 'DENIED') avCounts.DENIED++;
+    if (r.Availity_Status === 'PAID') avCounts['PAID']++;
+    else if (r.Availity_Status === 'PENDING') avCounts['PENDING']++;
+    else if (r.Availity_Status === 'DENIED') avCounts['DENIED']++;
     else avCounts['No Response']++;
   });
   charts.availity = new Chart(document.getElementById('chartAvaility'), {
     type: 'doughnut',
     data: {
       labels: Object.keys(avCounts),
-      datasets: [{ data: Object.values(avCounts), backgroundColor: ['#2E7D32','#C62828','#78909C'], borderWidth: 2, borderColor: '#fff' }]
+      datasets: [{ data: Object.values(avCounts), backgroundColor: ['#2E7D32','#1565C0','#C62828','#78909C'], borderWidth: 2, borderColor: '#fff' }]
     },
     options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
   });

@@ -117,6 +117,7 @@ tr.row-denied:hover{background:#FFE8E8}
 .pill-billed{background:#E8F5E9;color:#2E7D32}
 .pill-paid{background:#E8F5E9;color:#2E7D32}
 .pill-denied{background:var(--danger-light);color:var(--danger)}
+.pill-pending-av{background:#E3F2FD;color:#1565C0}
 .pill-none{background:#F1F5F9;color:var(--text-muted)}
 
 /* BADGES */
@@ -160,7 +161,7 @@ tr.row-denied:hover{background:#FFE8E8}
   <div class="welcome-card">
     <div class="welcome-icon">👋</div>
     <h2>Welcome to your personal dashboard</h2>
-    <p style="margin-top:10px">Select your name from the dropdown above to see your claims, performance metrics, and action items requiring follow-up.</p>
+    <p style="margin-top:10px">Select your name from the dropdown above to see your claims, performance metrics, and action items requiring follow-up.</p><p style="margin-top:8px;font-size:11px;color:#9CA3AF">📡 Data: OneHap Jan–May 2026 · Availity SFTP (rolling 90-day window) · Amounts from ERA/DPR files</p>
   </div>
 </div>
 
@@ -277,6 +278,7 @@ function onDataLoaded() {
   const m = DASHBOARD_DATA.meta;
   document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
   document.getElementById('hdr-time').textContent = 'Generated: '  + (m.generated_at_full || '—');
+  document.getElementById('hdr-date').textContent += ' · ' + (m.matched_claims||0).toLocaleString() + ' matched w/ Availity';
 
   const coords = [...new Set(
     DASHBOARD_DATA.claims_detail.map(r => r['Current Coordinator']).filter(Boolean)
@@ -327,7 +329,7 @@ function renderCoordKPIs(claims) {
   const total     = claims.length;
   const billed    = claims.reduce((s,r) => s + (r.Amount||0), 0);
   const collected = claims.reduce((s,r) => s + (r.Availity_PaidAmount||0), 0);
-  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID').length;
+  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID' || r.Availity_Status === 'PENDING').length;
   const denied_n  = claims.filter(r => r.Availity_Status === 'DENIED').length;
   const pending_n = claims.filter(r => r['Billing status'] === 'Pending').length;
   const avail_tot = paid_n + denied_n;
@@ -368,7 +370,7 @@ function renderCoordKPIs(claims) {
 function coordMetrics(claims) {
   const billed    = claims.reduce((s,r) => s + (r.Amount||0), 0);
   const collected = claims.reduce((s,r) => s + (r.Availity_PaidAmount||0), 0);
-  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID').length;
+  const paid_n    = claims.filter(r => r.Availity_Status === 'PAID' || r.Availity_Status === 'PENDING').length;
   const denied_n  = claims.filter(r => r.Availity_Status === 'DENIED').length;
   const avail_tot = paid_n + denied_n;
   return {
@@ -444,7 +446,7 @@ function renderTeamComparison(coordName, myClaims) {
 // ══════════════════════════════════════════════════
 function renderMyAttention(claims) {
   const attention = claims
-    .filter(r => r.Availity_Status === 'DENIED' || r['Billing status'] === 'Pending')
+    .filter(r => r.Availity_Status === 'DENIED' || r['Billing status'] === 'Pending' || r['Billing status'] === 'Billed')
     .sort((a,b) => {
       if (a.Availity_Status==='DENIED' && b.Availity_Status!=='DENIED') return -1;
       if (b.Availity_Status==='DENIED' && a.Availity_Status!=='DENIED') return  1;
@@ -532,9 +534,10 @@ function pillBilling(s) {
   return `<span class="pill ${cls}">${s}</span>`;
 }
 function pillAvailty(s) {
-  if (!s) return '<span class="pill pill-none">No Response</span>';
-  const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s]||'pill-none';
-  return `<span class="pill ${cls}">${s}</span>`;
+  if (!s || s === 'No Response') return '<span class="pill pill-none">No Response</span>';
+  const cls = {PAID:'pill-paid',DENIED:'pill-denied',PENDING:'pill-pending-av',ACCEPTED:'pill-paid'}[s]||'pill-none';
+  const label = s === 'PENDING' ? 'In-Flight' : s;
+  return `<span class="pill ${cls}">${label}</span>`;
 }
 
 // Start
