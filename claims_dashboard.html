@@ -748,11 +748,12 @@ function initMeta() {
   const banner  = document.createElement('div');
   banner.id     = 'coverage-banner';
   banner.style.cssText = 'background:#EEF3FB;border:1px solid #C5D5F0;border-left:4px solid #1B365D;border-radius:0;padding:8px 28px;font-size:12px;color:#1B365D;display:flex;gap:24px;flex-wrap:wrap;align-items:center';
-  banner.innerHTML = \`<strong>📡 Data Sources:</strong>
-    <span>OneHap <strong>${total.toLocaleString()}</strong> claims (Jan–May 2026)</span>
-    <span>·  Availity matched <strong>${matched.toLocaleString()}</strong> (${pct}% coverage)</span>
-    <span>·  ERA: <strong>${src.availity_era_files||0}</strong> files · DPR: <strong>${src.availity_dpr_files||0}</strong> files · Amounts confirmed: <strong>${(src.claims_with_amounts||0).toLocaleString()}</strong></span>
-    <span style="margin-left:auto;opacity:.7">ℹ️ Availity window ≈ 90 days — run weekly pull to stay current</span>\`;
+  banner.innerHTML =
+    '<strong>&#128225; Data Sources:</strong>' +
+    ' <span>OneHap <strong>' + total.toLocaleString() + '</strong> claims (Jan–May 2026)</span>' +
+    ' <span>&middot; Availity matched <strong>' + matched.toLocaleString() + '</strong> (' + pct + '% coverage)</span>' +
+    ' <span>&middot; ERA: <strong>' + (src.availity_era_files||0) + '</strong> files &middot; DPR: <strong>' + (src.availity_dpr_files||0) + '</strong> files &middot; Amounts: <strong>' + (src.claims_with_amounts||0).toLocaleString() + '</strong></span>' +
+    '<span style="margin-left:auto;opacity:.7">&#8505;&#65039; Availity window ≈90 days — run weekly pull</span>';
   document.querySelector('.app-header')?.insertAdjacentElement('afterend', banner);
 }
 
