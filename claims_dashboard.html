@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>OneHap Claims Dashboard — Global Impact Partners</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ── GIP BRAND TOKENS ──────────────────────────────── */
 :root {
@@ -132,6 +133,19 @@ a:hover { text-decoration: underline; }
   transition: all .2s;
 }
 .btn-clear:hover { border-color: var(--navy); color: var(--navy); }
+.btn-export {
+  background: var(--teal);
+  border: 1px solid var(--teal);
+  color: #fff;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-export:hover { background: var(--teal-light); border-color: var(--teal-light); }
 .btn-quick {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -570,6 +584,7 @@ tbody tr{cursor:pointer}
       <button class="btn-quick" onclick="setLast7Days()" id="btn-7d">Last 7 days</button>
       <button class="btn-quick" onclick="setThisMonth()" id="btn-month">This month</button>
       <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
+      <button class="btn-export" onclick="exportFilteredToExcel()">⬇ Export Excel</button>
       <div class="filter-count" id="filter-count">— claims</div>
     </div>
   </div>
@@ -754,7 +769,7 @@ function gipOpen(r) {
   var mm = r['status_discrepancy'];
   var name = ((r['Last name']||'') + ', ' + (r['First name']||'')).replace(/^,\s*/,'') || 'Unknown Patient';
 
-  document.getElementById('gip-m-name').textContent = name + '  ·  ' + (r['Claim ID']||'—');
+  document.getElementById('gip-m-name').textContent = name + '  ·  ' + (r['Provider one'] || r['Claim ID'] || '—');
 
   var statusTxt = mm ? 'WARNING: OneHap=' + bi + ' / Availity=' + av
     : av==='PAID'    ? 'PAID — Confirmed by Availity'
@@ -809,6 +824,7 @@ function gipOpen(r) {
   /* Details */
   var noa = hd ? 'Not in Availity files' : 'No Availity data';
   document.getElementById('gip-m-det').innerHTML = [
+    gipField('Provider One',   gipNA(r['Provider one'], r['Claim ID'] || '—')),
     gipField('Service Date',   gipNA(r['Date of service'])),
     gipField('Place of Service', gipNA(r['Place of service'],'Not specified')),
     gipField('Coordinator',    gipNA(r['Current Coordinator'])),
@@ -971,7 +987,7 @@ function gipRenderExtras() {
         <table id="tbl-attention">
           <thead>
             <tr>
-              <th onclick="sortTable('tbl-attention',0)">Claim ID</th>
+              <th onclick="sortTable('tbl-attention',0)">Provider One</th>
               <th onclick="sortTable('tbl-attention',1)">Patient</th>
               <th onclick="sortTable('tbl-attention',2)">Coordinator</th>
               <th onclick="sortTable('tbl-attention',3)">Plan</th>
@@ -1015,7 +1031,7 @@ function gipRenderExtras() {
           <table id="tbl-all">
             <thead>
               <tr>
-                <th onclick="sortTable('tbl-all',0)">Claim ID</th>
+                <th onclick="sortTable('tbl-all',0)">Provider One</th>
                 <th onclick="sortTable('tbl-all',1)">Patient</th>
                 <th onclick="sortTable('tbl-all',2)">DOB</th>
                 <th onclick="sortTable('tbl-all',3)">Coordinator</th>
@@ -1341,7 +1357,7 @@ function renderAttentionTable() {
         return (b.Amount||0) - (a.Amount||0);
       }).map(r => `
       <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : ''}">
-        <td><strong>${r['Claim ID'] || '—'}</strong></td>
+        <td><strong>${r['Provider one'] || r['Claim ID'] || '—'}</strong></td>
         <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
         <td>${r['Current Coordinator'] || '—'}</td>
         <td>${r['Plan type'] || '—'}</td>
@@ -1369,7 +1385,7 @@ function renderAttentionTable() {
           return (b.Amount||0) - (a.Amount||0);
         }).map(r => `
         <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : ''}">
-          <td><strong>${r['Claim ID'] || '\u2014'}</strong></td>
+          <td><strong>${r['Provider one'] || r['Claim ID'] || '\u2014'}</strong></td>
           <td>${r['Last name'] || '\u2014'}, ${r['First name'] || '\u2014'}</td>
           <td>${r['Current Coordinator'] || '\u2014'}</td>
           <td>${r['Plan type'] || '\u2014'}</td>
@@ -1423,7 +1439,7 @@ function renderAllClaimsTable() {
     ? '<tr><td colspan="11" class="empty-state"><div class="empty-icon">🔍</div>No claims match the current filters</td></tr>'
     : slice.map(r => `
       <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : r.Availity_Status === 'PAID' ? 'row-paid' : ''}">
-        <td>${r['Claim ID'] || '—'}</td>
+        <td>${r['Provider one'] || r['Claim ID'] || '—'}</td>
         <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
         <td>${r['DOB'] || '—'}</td>
         <td>${r['Current Coordinator'] || '—'}</td>
@@ -1630,6 +1646,72 @@ function pillAvailty(s) {
   if (!s) return '<span class="pill pill-none">No Response</span>';
   const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s] || 'pill-none';
   return `<span class="pill ${cls}">${s}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT — filtered claims → billings import format
+// ═══════════════════════════════════════════════════════
+function exportFilteredToExcel() {
+  if (!filteredClaims || filteredClaims.length === 0) {
+    alert('No hay reclamaciones en el filtro actual para exportar.');
+    return;
+  }
+
+  // Build rows matching the billings_import format exactly
+  var rows = filteredClaims.map(function(r) {
+    // Format date as MM/DD/YYYY to match import template
+    function fmtDate(d) {
+      if (!d) return '';
+      var parts = d.split('-');
+      if (parts.length === 3) return parts[1] + '/' + parts[2] + '/' + parts[0];
+      return d;
+    }
+    // Denied reason: use rejection_reason, then ack_reject_message
+    var deniedReason = r['rejection_reason'] || r['ack_reject_message'] || '';
+    // Claim number: payer_claim_number then Claim ID
+    var claimNum = r['payer_claim_number'] || r['Claim ID'] || '';
+
+    return {
+      'Provider one':         r['Provider one'] || '',
+      'Date of Service *':    fmtDate(r['Date of service']),
+      'Lead Organization':    r['Lead Organization'] || '',
+      'New Billing Status *': r['Billing status'] || '',
+      'Plan *':               r['Plan type'] || '',
+      'Lead Organization ID': r['DSNP number'] || '',
+      'First Name':           r['First name'] || '',
+      'Last Name':            r['Last name'] || '',
+      'DOB':                  fmtDate(r['DOB']),
+      'Denied reason':        deniedReason,
+      'Claim number':         claimNum
+    };
+  });
+
+  // Create workbook
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.json_to_sheet(rows, {
+    header: [
+      'Provider one', 'Date of Service *', 'Lead Organization',
+      'New Billing Status *', 'Plan *', 'Lead Organization ID',
+      'First Name', 'Last Name', 'DOB', 'Denied reason', 'Claim number'
+    ]
+  });
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:16}, {wch:16}, {wch:24}, {wch:20}, {wch:22},
+    {wch:20}, {wch:16}, {wch:18}, {wch:12}, {wch:40}, {wch:18}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Clients');
+
+  // Filename: GIP_Billings_Export_YYYY-MM-DD.xlsx
+  var today = new Date();
+  var yy = today.getFullYear();
+  var mm = String(today.getMonth()+1).padStart(2,'0');
+  var dd = String(today.getDate()).padStart(2,'0');
+  var filename = 'GIP_Billings_Export_' + yy + '-' + mm + '-' + dd + '.xlsx';
+
+  XLSX.writeFile(wb, filename);
 }
 </script>
 
