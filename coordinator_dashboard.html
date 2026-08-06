@@ -118,6 +118,15 @@ tr.row-denied:hover{background:#FFE8E8}
 .pill-paid{background:#E8F5E9;color:#2E7D32}
 .pill-denied{background:var(--danger-light);color:var(--danger)}
 .pill-none{background:#F1F5F9;color:var(--text-muted)}
+.pill-pending{background:#FFF3E0;color:#E65100}
+.pill-inadj{background:#E3F2FD;color:#1565C0}
+
+.api-coverage-banner {
+  background:#FFF3E0; border:1px solid #FFCC80; color:#E65100;
+  border-radius:10px; padding:10px 16px; margin:16px 28px 0; font-size:12.5px;
+  line-height:1.5; display:none;
+}
+.api-coverage-banner strong { font-weight:700; }
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;justify-content:center;
@@ -151,6 +160,8 @@ tr.row-denied:hover{background:#FFE8E8}
     </div>
   </div>
 </div>
+
+<div id="api-coverage-banner" class="api-coverage-banner"></div>
 
 <!-- ══════════════════════════════════════ LOADING -->
 <div id="loading-state"><div class="spinner"></div></div>
@@ -229,6 +240,7 @@ tr.row-denied:hover{background:#FFE8E8}
         <select id="filter-my-availity" onchange="renderMyClaims()">
           <option value="">All Availity</option>
           <option>PAID</option><option>DENIED</option>
+          <option>IN_ADJUDICATION</option><option>PENDING</option>
           <option value="null">No Response</option>
         </select>
       </div>
@@ -277,6 +289,11 @@ function onDataLoaded() {
   const m = DASHBOARD_DATA.meta;
   document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
   document.getElementById('hdr-time').textContent = 'Generated: '  + (m.generated_at_full || '—');
+  const banner = document.getElementById('api-coverage-banner');
+  if (banner && m.api_coverage_note) {
+    banner.innerHTML = '<strong>⚠ Data source note:</strong> ' + m.api_coverage_note;
+    banner.style.display = 'block';
+  }
 
   const coords = [...new Set(
     DASHBOARD_DATA.claims_detail.map(r => r['Current Coordinator']).filter(Boolean)
@@ -533,8 +550,9 @@ function pillBilling(s) {
 }
 function pillAvailty(s) {
   if (!s) return '<span class="pill pill-none">No Response</span>';
-  const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s]||'pill-none';
-  return `<span class="pill ${cls}">${s}</span>`;
+  const labels = {IN_ADJUDICATION:'IN ADJUDICATION'};
+  const cls = {PAID:'pill-paid',DENIED:'pill-denied',PENDING:'pill-pending',IN_ADJUDICATION:'pill-inadj'}[s]||'pill-none';
+  return `<span class="pill ${cls}">${labels[s] || s}</span>`;
 }
 
 // Start

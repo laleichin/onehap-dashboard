@@ -133,19 +133,6 @@ a:hover { text-decoration: underline; }
   transition: all .2s;
 }
 .btn-clear:hover { border-color: var(--navy); color: var(--navy); }
-.btn-export {
-  background: var(--teal);
-  border: 1px solid var(--teal);
-  color: #fff;
-  padding: 7px 16px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all .2s;
-  white-space: nowrap;
-}
-.btn-export:hover { background: var(--teal-light); border-color: var(--teal-light); }
 .btn-quick {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -247,6 +234,12 @@ a:hover { text-decoration: underline; }
 .kpi-card.blue::before  { background: linear-gradient(90deg, var(--blue), var(--blue-light)); }
 .kpi-card.danger::before { background: linear-gradient(90deg, var(--danger), #EF9A9A); }
 .kpi-card.warning::before { background: linear-gradient(90deg, var(--warning), #FFB74D); }
+.api-coverage-banner {
+  background: var(--warning-bg); border: 1px solid #FFCC80; color: var(--warning);
+  border-radius: 10px; padding: 10px 16px; margin: 16px 28px 0; font-size: 12.5px;
+  line-height: 1.5; display: none;
+}
+.api-coverage-banner strong { font-weight: 700; }
 .kpi-card.success::before { background: linear-gradient(90deg, var(--success), #66BB6A); }
 .kpi-label {
   font-size: 10.5px;
@@ -416,6 +409,20 @@ td.numeric { text-align: right; font-variant-numeric: tabular-nums; }
 .pill-approved { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
 .pill-billed   { background: #EDE7F6; color: #4527A0; border: 1px solid #CE93D8; }
 .pill-none     { background: var(--neutral-bg); color: var(--neutral); border: 1px solid #CFD8DC; }
+.pill-inadj    { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
+.btn-export {
+  background: var(--teal);
+  border: 1px solid var(--teal);
+  color: #fff;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-export:hover { background: var(--teal-light); border-color: var(--teal-light); }
 
 /* ── CHARTS ────────────────────────────────────────── */
 .charts-row {
@@ -542,6 +549,8 @@ tbody tr{cursor:pointer}
   </div>
 </header>
 
+<div id="api-coverage-banner" class="api-coverage-banner"></div>
+
 <div class="app-body">
 
   <!-- ═══════════════════════════════════════════════ FILTER BAR -->
@@ -573,6 +582,8 @@ tbody tr{cursor:pointer}
         <option value="">All Results</option>
         <option>PAID</option>
         <option>DENIED</option>
+        <option>IN_ADJUDICATION</option>
+        <option>PENDING</option>
         <option value="null">No Response</option>
       </select>
     </div>
@@ -769,7 +780,7 @@ function gipOpen(r) {
   var mm = r['status_discrepancy'];
   var name = ((r['Last name']||'') + ', ' + (r['First name']||'')).replace(/^,\s*/,'') || 'Unknown Patient';
 
-  document.getElementById('gip-m-name').textContent = name + '  ·  ' + (r['Provider one'] || r['Claim ID'] || '—');
+  document.getElementById('gip-m-name').textContent = name + '  ·  ' + (r['Claim ID']||'—');
 
   var statusTxt = mm ? 'WARNING: OneHap=' + bi + ' / Availity=' + av
     : av==='PAID'    ? 'PAID — Confirmed by Availity'
@@ -824,7 +835,6 @@ function gipOpen(r) {
   /* Details */
   var noa = hd ? 'Not in Availity files' : 'No Availity data';
   document.getElementById('gip-m-det').innerHTML = [
-    gipField('Provider One',   gipNA(r['Provider one'], r['Claim ID'] || '—')),
     gipField('Service Date',   gipNA(r['Date of service'])),
     gipField('Place of Service', gipNA(r['Place of service'],'Not specified')),
     gipField('Coordinator',    gipNA(r['Current Coordinator'])),
@@ -987,7 +997,7 @@ function gipRenderExtras() {
         <table id="tbl-attention">
           <thead>
             <tr>
-              <th onclick="sortTable('tbl-attention',0)">Provider One</th>
+              <th onclick="sortTable('tbl-attention',0)">Claim ID</th>
               <th onclick="sortTable('tbl-attention',1)">Patient</th>
               <th onclick="sortTable('tbl-attention',2)">Coordinator</th>
               <th onclick="sortTable('tbl-attention',3)">Plan</th>
@@ -1031,7 +1041,7 @@ function gipRenderExtras() {
           <table id="tbl-all">
             <thead>
               <tr>
-                <th onclick="sortTable('tbl-all',0)">Provider One</th>
+                <th onclick="sortTable('tbl-all',0)">Claim ID</th>
                 <th onclick="sortTable('tbl-all',1)">Patient</th>
                 <th onclick="sortTable('tbl-all',2)">DOB</th>
                 <th onclick="sortTable('tbl-all',3)">Coordinator</th>
@@ -1143,6 +1153,11 @@ function initMeta() {
   const m = DASHBOARD_DATA.meta;
   document.getElementById('hdr-date').textContent = 'Data as of: ' + (m.generated_at || '—');
   document.getElementById('hdr-time').textContent = 'Generated: ' + (m.generated_at_full || '—');
+  const banner = document.getElementById('api-coverage-banner');
+  if (banner && m.api_coverage_note) {
+    banner.innerHTML = '<strong>⚠ Data source note:</strong> ' + m.api_coverage_note;
+    banner.style.display = 'block';
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1357,7 +1372,7 @@ function renderAttentionTable() {
         return (b.Amount||0) - (a.Amount||0);
       }).map(r => `
       <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : ''}">
-        <td><strong>${r['Provider one'] || r['Claim ID'] || '—'}</strong></td>
+        <td><strong>${r['Claim ID'] || '—'}</strong></td>
         <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
         <td>${r['Current Coordinator'] || '—'}</td>
         <td>${r['Plan type'] || '—'}</td>
@@ -1385,7 +1400,7 @@ function renderAttentionTable() {
           return (b.Amount||0) - (a.Amount||0);
         }).map(r => `
         <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : ''}">
-          <td><strong>${r['Provider one'] || r['Claim ID'] || '\u2014'}</strong></td>
+          <td><strong>${r['Claim ID'] || '\u2014'}</strong></td>
           <td>${r['Last name'] || '\u2014'}, ${r['First name'] || '\u2014'}</td>
           <td>${r['Current Coordinator'] || '\u2014'}</td>
           <td>${r['Plan type'] || '\u2014'}</td>
@@ -1439,7 +1454,7 @@ function renderAllClaimsTable() {
     ? '<tr><td colspan="11" class="empty-state"><div class="empty-icon">🔍</div>No claims match the current filters</td></tr>'
     : slice.map(r => `
       <tr class="${r.Availity_Status === 'DENIED' ? 'row-denied' : r.Availity_Status === 'PAID' ? 'row-paid' : ''}">
-        <td>${r['Provider one'] || r['Claim ID'] || '—'}</td>
+        <td>${r['Claim ID'] || '—'}</td>
         <td>${r['Last name'] || '—'}, ${r['First name'] || '—'}</td>
         <td>${r['DOB'] || '—'}</td>
         <td>${r['Current Coordinator'] || '—'}</td>
@@ -1519,17 +1534,19 @@ function renderCharts() {
   });
 
   // Availity Doughnut
-  const avCounts = { PAID:0, DENIED:0, 'No Response':0 };
+  const avCounts = { PAID:0, DENIED:0, 'In Adjudication':0, PENDING:0, 'No Response':0 };
   DASHBOARD_DATA.claims_detail.forEach(r => {
     if (r.Availity_Status === 'PAID') avCounts.PAID++;
     else if (r.Availity_Status === 'DENIED') avCounts.DENIED++;
+    else if (r.Availity_Status === 'IN_ADJUDICATION') avCounts['In Adjudication']++;
+    else if (r.Availity_Status === 'PENDING') avCounts.PENDING++;
     else avCounts['No Response']++;
   });
   charts.availity = new Chart(document.getElementById('chartAvaility'), {
     type: 'doughnut',
     data: {
       labels: Object.keys(avCounts),
-      datasets: [{ data: Object.values(avCounts), backgroundColor: ['#2E7D32','#C62828','#78909C'], borderWidth: 2, borderColor: '#fff' }]
+      datasets: [{ data: Object.values(avCounts), backgroundColor: ['#2E7D32','#C62828','#1565C0','#E65100','#78909C'], borderWidth: 2, borderColor: '#fff' }]
     },
     options: { responsive:true, maintainAspectRatio:false, plugins: { legend: { position:'bottom', labels:{ font:{size:11}, padding:8 } } } }
   });
@@ -1569,10 +1586,12 @@ function updateCharts() {
     charts.billing.update();
   }
 
-  const avCounts = { PAID:0, DENIED:0, 'No Response':0 };
+  const avCounts = { PAID:0, DENIED:0, 'In Adjudication':0, PENDING:0, 'No Response':0 };
   filteredClaims.forEach(r => {
     if (r.Availity_Status === 'PAID') avCounts.PAID++;
     else if (r.Availity_Status === 'DENIED') avCounts.DENIED++;
+    else if (r.Availity_Status === 'IN_ADJUDICATION') avCounts['In Adjudication']++;
+    else if (r.Availity_Status === 'PENDING') avCounts.PENDING++;
     else avCounts['No Response']++;
   });
   if (charts.availity) {
@@ -1644,13 +1663,11 @@ function pillBilling(s) {
 
 function pillAvailty(s) {
   if (!s) return '<span class="pill pill-none">No Response</span>';
-  const cls = {PAID:'pill-paid',DENIED:'pill-denied'}[s] || 'pill-none';
-  return `<span class="pill ${cls}">${s}</span>`;
+  const labels = {IN_ADJUDICATION:'IN ADJUDICATION'};
+  const cls = {PAID:'pill-paid',DENIED:'pill-denied',PENDING:'pill-pending',IN_ADJUDICATION:'pill-inadj'}[s] || 'pill-none';
+  return `<span class="pill ${cls}">${labels[s] || s}</span>`;
 }
 
-// ═══════════════════════════════════════════════════════
-// EXPORT — filtered claims → billings import format
-// ═══════════════════════════════════════════════════════
 function exportFilteredToExcel() {
   if (!filteredClaims || filteredClaims.length === 0) {
     alert('No hay reclamaciones en el filtro actual para exportar.');
