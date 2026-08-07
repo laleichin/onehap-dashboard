@@ -240,6 +240,9 @@ a:hover { text-decoration: underline; }
   line-height: 1.5; display: none;
 }
 .api-coverage-banner strong { font-weight: 700; }
+.gip-clickable-row { cursor: pointer; transition: background .12s ease; }
+.gip-clickable-row:hover { background: #E3ECF7 !important; }
+.gip-clickable-row.row-active { background: #D6E4F5 !important; box-shadow: inset 3px 0 0 #1B365D; }
 .kpi-card.success::before { background: linear-gradient(90deg, var(--success), #66BB6A); }
 .kpi-label {
   font-size: 10.5px;
@@ -591,6 +594,10 @@ tbody tr{cursor:pointer}
       <label>Plan Type</label>
       <select id="filter-plan"><option value="">All Plans</option></select>
     </div>
+    <div class="filter-group">
+      <label>Payer</label>
+      <select id="filter-payer"><option value="">All Payers</option></select>
+    </div>
     <div class="filter-actions">
       <button class="btn-quick" onclick="setLast7Days()" id="btn-7d">Last 7 days</button>
       <button class="btn-quick" onclick="setThisMonth()" id="btn-month">This month</button>
@@ -917,8 +924,49 @@ document.addEventListener('click', function(e) {
     rows = Array.from(tbody.querySelectorAll('tr'));
     idx  = rows.indexOf(tr);
     if (attn[idx]) { gipOpen(attn[idx]); }
+  } else if (tbody.id === 'gip-tbody-payer') {
+    if (tr.dataset && tr.dataset.payer) { setPayerFilter(tr.dataset.payer); }
+  } else if (tbody.id === 'tbody-coord') {
+    if (tr.dataset && tr.dataset.coord) { setCoordinatorFilter(tr.dataset.coord); }
   }
 });
+
+/* Click-to-filter: Payer / Coordinator tables */
+function escAttr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function setPayerFilter(payerName) {
+  var sel = document.getElementById('filter-payer');
+  sel.value = (sel.value === payerName) ? '' : payerName;
+  clearQuickBtns();
+  applyFilters();
+  scrollToFilterBar();
+}
+
+function setCoordinatorFilter(coordName) {
+  var sel = document.getElementById('filter-coordinator');
+  sel.value = (sel.value === coordName) ? '' : coordName;
+  clearQuickBtns();
+  applyFilters();
+  scrollToFilterBar();
+}
+
+function scrollToFilterBar() {
+  var bar = document.querySelector('.filter-bar');
+  if (bar) { bar.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+}
+
+function highlightActiveFilterRows() {
+  var payerVal = (document.getElementById('filter-payer') || {}).value || '';
+  var coordVal = (document.getElementById('filter-coordinator') || {}).value || '';
+  document.querySelectorAll('#gip-tbody-payer tr[data-payer]').forEach(function(row) {
+    row.classList.toggle('row-active', !!payerVal && row.dataset.payer === payerVal);
+  });
+  document.querySelectorAll('#tbody-coord tr[data-coord]').forEach(function(row) {
+    row.classList.toggle('row-active', !!coordVal && row.dataset.coord === coordVal);
+  });
+}
 
 /* Render new tables */
 function gipRenderExtras() {
@@ -933,7 +981,7 @@ function gipRenderExtras() {
   if (pe) {
     pe.innerHTML = payers.map(function(r, i) {
       var bg = i%2===0 ? '#F8FAFC' : '#fff';
-      return '<tr style="background:'+bg+'">'
+      return '<tr class="gip-clickable-row" data-payer="' + escAttr(r.Payer||'') + '" style="background:'+bg+'" title="Click to filter by this payer">'
         + '<td style="padding:7px 12px;font-weight:600">' + (r.Payer||'—') + '</td>'
         + '<td style="padding:7px 12px;text-align:right">' + Number(r.Claims).toLocaleString() + '</td>'
         + '<td style="padding:7px 12px;text-align:right">' + f(r.Total_Billed) + '</td>'
@@ -1123,6 +1171,7 @@ function startDashboard(data) {
   renderCoordTable();
   renderCharts();
   if(typeof gipRenderExtras==="function"){gipRenderExtras();}
+  if(typeof highlightActiveFilterRows==="function"){highlightActiveFilterRows();}
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1186,9 +1235,20 @@ function initFilters() {
     planSel.appendChild(o);
   });
 
+  // Populate payer dropdown
+  const payerNames = [...new Set(
+    DASHBOARD_DATA.claims_detail.map(r => r.payer_name).filter(Boolean)
+  )].sort();
+  const payerSel = document.getElementById('filter-payer');
+  payerNames.forEach(pn => {
+    const o = document.createElement('option');
+    o.value = o.textContent = pn;
+    payerSel.appendChild(o);
+  });
+
   // Event listeners
   ['filter-date-from','filter-date-to','filter-coordinator',
-   'filter-billing','filter-availity','filter-plan'].forEach(id => {
+   'filter-billing','filter-availity','filter-plan','filter-payer'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
       clearQuickBtns();
       applyFilters();
@@ -1200,7 +1260,7 @@ function initFilters() {
 
 function clearFilters() {
   ['filter-date-from','filter-date-to'].forEach(id => document.getElementById(id).value = '');
-  ['filter-coordinator','filter-billing','filter-availity','filter-plan']
+  ['filter-coordinator','filter-billing','filter-availity','filter-plan','filter-payer']
     .forEach(id => document.getElementById(id).value = '');
   clearQuickBtns();
   applyFilters();
@@ -1246,6 +1306,7 @@ function applyFilters() {
   const billing  = document.getElementById('filter-billing').value;
   const availity = document.getElementById('filter-availity').value;
   const plan     = document.getElementById('filter-plan').value;
+  const payer    = document.getElementById('filter-payer').value;
 
   filteredClaims = DASHBOARD_DATA.claims_detail.filter(r => {
     const svc = r['Date of service'];
@@ -1254,10 +1315,13 @@ function applyFilters() {
     if (coord   && r['Current Coordinator'] !== coord)   return false;
     if (billing && r['Billing status'] !== billing)       return false;
     if (plan    && r['Plan type'] !== plan)               return false;
+    if (payer   && r.payer_name !== payer)                return false;
     if (availity === 'null') { if (r['Availity_Status'] !== null) return false; }
     else if (availity && r['Availity_Status'] !== availity) return false;
     return true;
   });
+
+  highlightActiveFilterRows();
 
   document.getElementById('filter-count').textContent =
     filteredClaims.length + ' claim' + (filteredClaims.length !== 1 ? 's' : '');
@@ -1495,7 +1559,7 @@ function renderAllClaimsTable() {
 function renderCoordTable() {
   const tbody = document.getElementById('tbody-coord');
   tbody.innerHTML = DASHBOARD_DATA.by_coordinator.map(r => `
-    <tr>
+    <tr class="gip-clickable-row" data-coord="${escAttr(r.Coordinator || '')}" title="Click to filter by this coordinator">
       <td><strong>${r.Coordinator || '—'}</strong></td>
       <td class="numeric">${r.Total_Claims}</td>
       <td class="numeric">${fmtUSD(r.Amount_Billed)}</td>
